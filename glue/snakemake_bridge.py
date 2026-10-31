@@ -427,6 +427,19 @@ class RunManager:
             env = os.environ.copy()
             root = str(Path(__file__).resolve().parent.parent)
             env["PYTHONPATH"] = root + os.pathsep + env.get("PYTHONPATH", "")
+            if self.config.deploy == "conda":
+                condarc = self.config.cache_dir / "conda.condarc"
+                if not condarc.exists():
+                    condarc.parent.mkdir(parents=True, exist_ok=True)
+                    condarc.write_text(
+                        "channels:\n  - conda-forge\n  - bioconda\n"
+                        "default_channels: []\nchannel_priority: strict\n"
+                    )
+                env.setdefault("CONDARC", str(condarc))
+                env.setdefault("CONDA_DEFAULT_CHANNELS", "")
+                conda_bin = Path(self.config.conda_bin)
+                if conda_bin.is_file():
+                    env["PATH"] = str(conda_bin.parent) + os.pathsep + env.get("PATH", "")
             try:
                 with (directory / "supervisor.log").open("a") as log:
                     process = subprocess.Popen(

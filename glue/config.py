@@ -28,6 +28,7 @@ def load_config(path: Path | None = None, *, workspace: Path | None = None) -> C
         cache_dir=absolute(raw.get("cache_dir", cache)),
         upstream_dir=absolute(raw.get("upstream_dir", data / "upstream")),
         conda_prefix=absolute(raw.get("conda_prefix", cache / "conda-envs")),
+        conda_bin=str(raw.get("conda_bin", "conda")),
         wrappers_version=str(raw.get("wrappers_version", "v5.0.0")),
         cores=int(raw.get("cores", 4)),
         deploy=raw.get("deploy", "conda"),

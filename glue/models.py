@@ -188,6 +188,7 @@ class Config:
     cache_dir: Path
     upstream_dir: Path
     conda_prefix: Path
+    conda_bin: str = "conda"
     wrappers_version: str = "v5.0.0"
     cores: int = 4
     deploy: DeployMethod = "conda"

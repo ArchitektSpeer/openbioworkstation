@@ -1,0 +1,497 @@
+# Top-50 常用生信工具的批量封装清单。
+# 用法：python -m glue.wrap_batch --manifest tool_packs/top50.yaml --conda /opt/miniconda3/bin/conda
+# 已提供定义的条目会被真实封装到 data_dir/auto_wrapped/<pkg>/<cmd>/，默认 reviewed=false。
+# command 是工具 ID 中的命令名；binary 是实际执行的可执行文件（多子命令工具用）。
+# pending 条目需要目录端口、数据库、专用测试数据或多文件输出，逐个接入。
+tools:
+  - package: seqkit
+    command: seqkit
+    definition:
+      name: seqkit stats
+      description: 序列统计（FASTA/FASTQ 的条数、长度、Q20/Q30 等）
+      biows:
+        inputs:
+          reads: {formats: [FASTA, FASTQ], multiple: true}
+        outputs:
+          stats: {formats: [TSV]}
+        shell: "seqkit stats -T {input.reads:q} > {output.stats:q}"
+
+  - package: seqtk
+    command: seqtk
+    definition:
+      name: seqtk seq
+      description: FASTQ 转 FASTA（基础序列转换）
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          fasta: {formats: [FASTA]}
+        shell: "seqtk seq -a {input.reads:q} > {output.fasta:q}"
+
+  - package: seqtk
+    command: seqtk-sample
+    binary: seqtk
+    definition:
+      name: seqtk sample
+      description: 固定随机种子抽样 FASTQ 读段
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          reads: {formats: [FASTQ]}
+        params: {seed: 42, number: 100000}
+        shell: "seqtk sample -s {params.seed} {input.reads:q} {params.number} > {output.reads:q}"
+
+  - package: bedtools
+    command: bedtools-sort
+    binary: bedtools
+    definition:
+      name: bedtools sort
+      description: 按染色体和坐标排序 BED
+      biows:
+        inputs:
+          bed: {formats: [BED]}
+        outputs:
+          bed: {formats: [BED]}
+        shell: "bedtools sort -i {input.bed:q} > {output.bed:q}"
+
+  - package: bedtools
+    command: bedtools-merge
+    binary: bedtools
+    definition:
+      name: bedtools merge
+      description: 合并重叠或相邻的 BED 区间（要求已排序）
+      biows:
+        inputs:
+          bed: {formats: [BED]}
+        outputs:
+          bed: {formats: [BED]}
+        shell: "bedtools merge -i {input.bed:q} > {output.bed:q}"
+
+  - package: bedtools
+    command: bedtools-intersect
+    binary: bedtools
+    definition:
+      name: bedtools intersect
+      description: 两个 BED 区间求交集
+      biows:
+        inputs:
+          a: {formats: [BED]}
+          b: {formats: [BED]}
+        outputs:
+          bed: {formats: [BED]}
+        shell: "bedtools intersect -a {input.a:q} -b {input.b:q} > {output.bed:q}"
+
+  - package: bedtools
+    command: bedtools-genomecov
+    binary: bedtools
+    definition:
+      name: bedtools genomecov
+      description: 从 BAM 生成每碱基覆盖度 BEDGRAPH
+      biows:
+        inputs:
+          bam: {formats: [BAM]}
+        outputs:
+          bedgraph: {formats: [BED]}
+        shell: "bedtools genomecov -ibam {input.bam:q} -bg > {output.bedgraph:q}"
+
+  - package: samtools
+    command: samtools-faidx
+    binary: samtools
+    definition:
+      name: samtools faidx
+      description: 为 FASTA 建立 .fai 索引
+      biows:
+        inputs:
+          fasta: {formats: [FASTA]}
+        outputs:
+          fai: {formats: [ANY]}
+        shell: "samtools faidx -o {output.fai:q} {input.fasta:q}"
+
+  - package: samtools
+    command: samtools-flagstat
+    binary: samtools
+    definition:
+      name: samtools flagstat
+      description: BAM 比对统计
+      biows:
+        inputs:
+          bam: {formats: [BAM]}
+        outputs:
+          text: {formats: [TEXT]}
+        shell: "samtools flagstat {input.bam:q} > {output.text:q}"
+
+  - package: samtools
+    command: samtools-depth
+    binary: samtools
+    definition:
+      name: samtools depth
+      description: 每碱基测序深度表
+      biows:
+        inputs:
+          bam: {formats: [BAM]}
+        outputs:
+          tsv: {formats: [TSV]}
+        shell: "samtools depth {input.bam:q} > {output.tsv:q}"
+
+  - package: bcftools
+    command: bcftools-view
+    binary: bcftools
+    definition:
+      name: bcftools view
+      description: VCF 转 BCF
+      biows:
+        inputs:
+          vcf: {formats: [VCF]}
+        outputs:
+          bcf: {formats: [BCF]}
+        shell: "bcftools view -O b -o {output.bcf:q} {input.vcf:q}"
+
+  - package: bcftools
+    command: bcftools-query
+    binary: bcftools
+    definition:
+      name: bcftools query
+      description: 提取 VCF 的 CHROM/POS/REF/ALT 为 TSV
+      biows:
+        inputs:
+          vcf: {formats: [VCF]}
+        outputs:
+          tsv: {formats: [TSV]}
+        shell: "bcftools query -f '%CHROM\\t%POS\\t%REF\\t%ALT\\n' {input.vcf:q} > {output.tsv:q}"
+
+  - package: minimap2
+    command: minimap2
+    definition:
+      name: minimap2 map-ont
+      description: 长读段比对（Oxford Nanopore 预设），输出 SAM
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+          reads: {formats: [FASTQ]}
+        outputs:
+          sam: {formats: [SAM]}
+        params: {preset: map-ont}
+        shell: "minimap2 -ax {params.preset} -t {threads} {input.reference:q} {input.reads:q} > {output.sam:q}"
+
+  - package: mafft
+    command: mafft
+    definition:
+      name: mafft auto
+      description: 多序列比对（自动选择算法）
+      biows:
+        inputs:
+          fasta: {formats: [FASTA]}
+        outputs:
+          aligned: {formats: [FASTA]}
+        shell: "mafft --auto --thread {threads} {input.fasta:q} > {output.aligned:q}"
+
+  - package: fasttree
+    command: FastTree
+    definition:
+      name: FastTree
+      description: 从核苷酸多序列比对构建近似最大似然树
+      biows:
+        inputs:
+          alignment: {formats: [FASTA]}
+        outputs:
+          tree: {formats: [ANY]}
+        shell: "FastTree -nt {input.alignment:q} > {output.tree:q}"
+
+  - package: cutadapt
+    command: cutadapt
+    definition:
+      name: cutadapt
+      description: 去除测序接头（单端）
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          trimmed: {formats: [FASTQ]}
+          log: {formats: [TEXT]}
+        shell: "cutadapt -j {threads} -o {output.trimmed:q} {input.reads:q} > {output.log:q}"
+
+  - package: freebayes
+    command: freebayes
+    definition:
+      name: freebayes
+      description: 从 BAM 检出变异（freebayes 贝叶斯方法）
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+          bam: {formats: [BAM]}
+        outputs:
+          vcf: {formats: [VCF]}
+        shell: "freebayes -f {input.reference:q} {input.bam:q} > {output.vcf:q}"
+
+  - package: blast
+    command: blastn
+    definition:
+      name: blastn
+      description: 核酸对核酸 BLAST，表格输出
+      biows:
+        inputs:
+          query: {formats: [FASTA]}
+          subject: {formats: [FASTA]}
+        outputs:
+          table: {formats: [TSV]}
+        shell: "blastn -query {input.query:q} -subject {input.subject:q} -outfmt 6 -out {output.table:q}"
+
+  - package: hmmer
+    command: hmmsearch
+    definition:
+      name: hmmsearch
+      description: 用 HMM 模型搜索蛋白序列
+      biows:
+        inputs:
+          hmm: {formats: [ANY]}
+          sequences: {formats: [FASTA]}
+        outputs:
+          domtbl: {formats: [TSV]}
+          text: {formats: [TEXT]}
+        shell: "hmmsearch --domtblout {output.domtbl:q} --noali {input.hmm:q} {input.sequences:q} > {output.text:q}"
+
+  - package: prodigal
+    command: prodigal
+    definition:
+      name: prodigal
+      description: 原核基因组基因预测（GFF + 蛋白序列）
+      biows:
+        inputs:
+          contigs: {formats: [FASTA]}
+        outputs:
+          gff: {formats: [GFF]}
+          proteins: {formats: [FASTA]}
+        shell: "prodigal -q -i {input.contigs:q} -o {output.gff:q} -a {output.proteins:q}"
+
+  - package: htslib
+    command: bgzip
+    definition:
+      name: bgzip
+      description: BGZF 压缩（tabix 前置）
+      biows:
+        inputs:
+          file: {formats: [ANY]}
+        outputs:
+          gz: {formats: [ANY]}
+        shell: "bgzip -c {input.file:q} > {output.gz:q}"
+
+  - package: htslib
+    command: tabix
+    definition:
+      name: tabix
+      description: 为 bgzip 压缩的 VCF 建立 .tbi 索引
+      biows:
+        inputs:
+          vcf_gz: {formats: [ANY]}
+        outputs:
+          tbi: {formats: [ANY]}
+        shell: "tabix -f -p vcf {input.vcf_gz:q} && mv {input.vcf_gz:q}.tbi {output.tbi:q}"
+
+  - package: kallisto
+    command: kallisto-index
+    binary: kallisto
+    definition:
+      name: kallisto index
+      description: 从转录组 FASTA 构建 kallisto 索引
+      biows:
+        inputs:
+          fasta: {formats: [FASTA]}
+        outputs:
+          index: {formats: [ANY]}
+        shell: "kallisto index -i {output.index:q} {input.fasta:q}"
+
+  - package: subread
+    command: featureCounts
+    definition:
+      name: featureCounts
+      description: 从 BAM 与 GTF 统计基因水平 reads 计数
+      biows:
+        inputs:
+          bam: {formats: [BAM]}
+          annotation: {formats: [GTF]}
+        outputs:
+          counts: {formats: [TSV]}
+        shell: "featureCounts -T {threads} -a {input.annotation:q} -o {output.counts:q} {input.bam:q}"
+
+  - package: picard
+    command: picard-markduplicates
+    binary: picard
+    definition:
+      name: picard MarkDuplicates
+      description: 标记 PCR 重复
+      biows:
+        inputs:
+          bam: {formats: [BAM]}
+        outputs:
+          bam: {formats: [BAM]}
+          metrics: {formats: [TSV]}
+        shell: "picard MarkDuplicates -I {input.bam:q} -O {output.bam:q} -M {output.metrics:q}"
+
+  - package: clustalo
+    command: clustalo
+    definition:
+      name: clustalo
+      description: 多序列比对（Clustal Omega）
+      biows:
+        inputs:
+          fasta: {formats: [FASTA]}
+        outputs:
+          aligned: {formats: [FASTA]}
+        shell: "clustalo -i {input.fasta:q} -o {output.aligned:q} --force --outfmt=fa"
+
+  - package: sourmash
+    command: sourmash-sketch
+    binary: sourmash
+    definition:
+      name: sourmash sketch
+      description: 生成 DNA k-mer 签名
+      biows:
+        inputs:
+          reads: {formats: [FASTA, FASTQ], multiple: true}
+        outputs:
+          signature: {formats: [ANY]}
+        params: {k: 31}
+        shell: "sourmash sketch dna -p k={params.k} -o {output.signature:q} {input.reads:q}"
+
+  - package: kmer-jellyfish
+    command: jellyfish-count
+    binary: jellyfish
+    definition:
+      name: jellyfish count
+      description: k-mer 计数
+      biows:
+        inputs:
+          reads: {formats: [FASTA, FASTQ]}
+        outputs:
+          counts: {formats: [ANY]}
+        params: {mer: 21}
+        shell: "jellyfish count -m {params.mer} -s 100M -t {threads} -o {output.counts:q} {input.reads:q}"
+
+  - package: trimmomatic
+    command: trimmomatic
+    definition:
+      name: trimmomatic SE
+      description: 单端 reads 修剪
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          trimmed: {formats: [FASTQ]}
+        shell: "trimmomatic SE -threads {threads} -phred33 {input.reads:q} {output.trimmed:q} MINLEN:10"
+
+  - package: lastz
+    command: lastz
+    definition:
+      name: lastz
+      description: 核酸全基因组比对（MAF 输出）
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+          query: {formats: [FASTA]}
+        outputs:
+          alignment: {formats: [ANY]}
+        shell: "lastz {input.reference:q} {input.query:q} --format=maf > {output.alignment:q}"
+
+  - package: ngmlr
+    command: ngmlr
+    definition:
+      name: ngmlr
+      description: 长读段比对（nanopore/pacbio），输出 SAM
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+          reads: {formats: [FASTQ]}
+        outputs:
+          sam: {formats: [SAM]}
+        shell: "ngmlr -t {threads} -r {input.reference:q} -q {input.reads:q} -o {output.sam:q}"
+
+  - package: abricate
+    command: abricate
+    definition:
+      name: abricate
+      description: 抗性基因筛查
+      biows:
+        inputs:
+          contigs: {formats: [FASTA]}
+        outputs:
+          table: {formats: [TSV]}
+        shell: "abricate {input.contigs:q} > {output.table:q}"
+
+  - package: mlst
+    command: mlst
+    definition:
+      name: mlst
+      description: 多位点序列分型
+      biows:
+        inputs:
+          contigs: {formats: [FASTA]}
+        outputs:
+          table: {formats: [TSV]}
+        shell: "mlst {input.contigs:q} > {output.table:q}"
+
+  - package: mummer
+    command: mummer
+    definition:
+      name: mummer
+      description: 精确匹配搜索
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+          query: {formats: [FASTA]}
+        outputs:
+          matches: {formats: [TEXT]}
+        shell: "mummer -mum -b -c {input.reference:q} {input.query:q} > {output.matches:q}"
+
+  - package: emboss
+    command: water
+    definition:
+      name: emboss water
+      description: 两序列局部比对（Smith-Waterman）
+      biows:
+        inputs:
+          sequence_a: {formats: [FASTA]}
+          sequence_b: {formats: [FASTA]}
+        outputs:
+          alignment: {formats: [TEXT]}
+        shell: "water -auto -asequence {input.sequence_a:q} -bsequence {input.sequence_b:q} -outfile {output.alignment:q}"
+
+  - package: trnascan-se
+    command: tRNAscan-SE
+    definition:
+      name: tRNAscan-SE
+      description: tRNA 基因预测
+      biows:
+        inputs:
+          genome: {formats: [FASTA]}
+        outputs:
+          table: {formats: [TSV]}
+        shell: "tRNAscan-SE -o {output.table:q} {input.genome:q}"
+
+  - package: barrnap
+    command: barrnap
+    definition:
+      name: barrnap
+      description: rRNA 基因预测（GFF + 序列）
+      biows:
+        inputs:
+          genome: {formats: [FASTA]}
+        outputs:
+          rrna: {formats: [FASTA]}
+          gff: {formats: [GFF]}
+        shell: "barrnap --quiet --outseq {output.rrna:q} {input.genome:q} > {output.gff:q}"
+
+pending:
+  - {package: fastqc, command: fastqc, reason: 输出目录与报告命名需专用处理}
+  - {package: multiqc, command: multiqc, reason: 目录输入，端口模型需扩展}
+  - {package: bowtie2, command: bowtie2-build, reason: 索引为多文件目录输出}
+  - {package: hisat2, command: hisat2-build, reason: 索引为多文件目录输出}
+  - {package: star, command: STAR, reason: 索引目录且内存需求高}
+  - {package: salmon, command: salmon, reason: 索引/定量输出为目录与多文件}
+  - {package: gatk4, command: gatk, reason: 多子命令与参考字典依赖}
+  - {package: macs3, command: macs3, reason: callpeak 输出为前缀多文件}
+  - {package: mosdepth, command: mosdepth, reason: 输出为前缀多文件}
+  - {package: quast, command: quast, reason: 结果目录输出}
+  - {package: prokka, command: prokka, reason: 结果目录输出}
+  - {package: spades, command: spades.py, reason: 多输入/组装目录，资源需求高}
+  - {package: flye, command: flye, reason: 组装目录输出，资源需求高}

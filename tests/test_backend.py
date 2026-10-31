@@ -4,6 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+import yaml
 
 from glue import session_schema as s
 from glue.bio_inspector import inspect_bio_file
@@ -222,6 +223,41 @@ def test_bioconda_channeldata_index(tmp_path):
     assert entries["conda:bwa"].reviewed is False
     registry = ToolRegistry([adapter], tmp_path / "cache")
     assert registry.search("fastqc").total == 1
+
+
+def test_mark_reviewed_upstream(tmp_path):
+    tool = tmp_path / "upstream" / "bio" / "demo"
+    tool.mkdir(parents=True)
+    (tool / "meta.yaml").write_text("name: demo\ninput:\n  - reads\noutput:\n  - out\n")
+    (tool / "wrapper.py").write_text("")
+    reviewed = tmp_path / "reviewed.json"
+    registry = ToolRegistry(
+        [SnakemakeWrapperAdapter(tmp_path / "upstream")], tmp_path / "cache", reviewed
+    )
+    registry.build_index(refresh=True)
+    tool_id = "smk:bio/demo"
+    assert registry.get(tool_id).reviewed is False
+    registry.mark_reviewed(tool_id)
+    assert registry.get(tool_id).reviewed is True
+    again = ToolRegistry(
+        [SnakemakeWrapperAdapter(tmp_path / "upstream")], tmp_path / "cache", reviewed
+    )
+    again.build_index()
+    assert again.get(tool_id).reviewed is True
+
+
+def test_top50_manifest_definitions(tmp_path):
+    manifest = Path(__file__).resolve().parents[1] / "tool_packs/top50.yaml"
+    data = yaml.safe_load(manifest.read_text())
+    adapter = BiocondaAutoWrapAdapter(tmp_path, tmp_path / "wrapped", tmp_path / "envs")
+    tool_ids = set()
+    for entry in data["tools"]:
+        spec = adapter.validate(
+            entry["package"], entry["command"], entry["definition"], tmp_path / "wrapped"
+        )
+        assert spec.tool_id not in tool_ids
+        tool_ids.add(spec.tool_id)
+    assert len(tool_ids) == len(data["tools"])
 
 
 def test_logs():

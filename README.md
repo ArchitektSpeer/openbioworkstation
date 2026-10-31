@@ -89,12 +89,34 @@ conda create -y --solver libmamba --override-channels \
 workspace: ~/biows/projects/demo
 cores: 4
 deploy: conda
+conda_bin: /opt/miniconda3/bin/conda
 allow_unreviewed: false
 allowed_input_roots:
   - ~/biows/input
 ```
 
 输入必须位于工作区或许可根目录内，MCP 输出预览限于工作区。上游目录与环境选项见 [设计文档](DESIGN.md)。
+
+### 批量封装 Top-50 工具
+
+`tool_packs/top50.yaml` 收录 50 个常用工具：37 个已提供 `biows` 定义，13 个需要目录/数据库类端口，暂列 pending。执行：
+
+```bash
+python -m glue.wrap_batch --manifest tool_packs/top50.yaml \
+  --conda /opt/miniconda3/bin/conda
+```
+
+命令会为每个包创建独立 Conda 环境（固定 conda-forge + bioconda，不使用 defaults 渠道）、写入 `auto:` 定义并做一次存活检查。定义默认 `reviewed=false`，需在画布右键“标记为已审核”后才会被默认运行。多子命令工具（如 `samtools-faidx`）通过 `binary` 字段复用同一环境。
+
+合成数据冒烟（可选）：
+
+```bash
+python validation/wrap_smoke.py --review-passed
+```
+
+脚本用合成的 FASTA/FASTQ/BED/VCF/GTF/BAM 逐个执行定义中的 shell，检查退出码与输出文件；`--review-passed` 会只把通过的条目标记为已审核。
+
+首批结果：37 个工具已封装，**35/35 合成数据冒烟通过并审核**（`hmmsearch`、`barrnap` 仅做存活检查）；`seqkit` 已通过「画布 → Snakemake」端到端运行验证（2/2 步）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
 
 ## 真实案例：WSMV 共感染分析
 
@@ -106,7 +128,7 @@ WSMV 案例用 12 个 RNA-seq 文库跑通了从工具接线、真实运行到�
 
 ## 当前限制
 
-- 可检索规模已实测：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。但可直接执行的仍限于 5 个内置 wrapper 定义与 8 个条件可用的本机节点；nf-core 仅 86 个模块可自动生成 shell，Bioconda 条目需按需封装并审核。
+- 可检索规模已实测：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。可直接执行的限于 5 个内置 wrapper、8 个条件可用的本机节点，以及本机按需封装的 Bioconda 工具；Top-50 清单首批 37 个工具已提供定义（35 个通过合成数据冒烟并审核）。nf-core 仅 86 个模块可自动生成 shell；Bioconda 长尾需按需封装并审核。
 - `smk:` wrapper + Conda 环境链路从未真实跑通，不能把本机工具运行当作该链路的验证。首次获取 wrapper / 环境需要网络与可用 Conda。
 - MCP 已验证 stdio 接口，尚未在真实 Agent 客户端（如 Claude Desktop）中实测。
 - Linux 单机，无多用户、远程协作或集群配置界面；无多样本通配符展开，使用多条节点链。

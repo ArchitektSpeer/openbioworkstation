@@ -3,8 +3,10 @@
 import json
 import keyword
 import re
+import shutil
 import string
 import subprocess
+import tempfile
 import threading
 from collections import defaultdict
 from dataclasses import asdict, replace
@@ -264,10 +266,19 @@ class NfCoreModuleAdapter:
 class BiocondaAutoWrapAdapter:
     source = "bioconda-auto"
 
-    def __init__(self, root: Path, wrapped_dir: Path, conda_prefix: Path):
+    def __init__(self, root: Path, wrapped_dir: Path, conda_prefix: Path, conda_bin="conda"):
         self.root, self.wrapped_dir, self.conda_prefix = map(
             Path, (root, wrapped_dir, conda_prefix)
         )
+        self.conda_bin = conda_bin
+
+    def _conda(self):
+        executable = shutil.which(self.conda_bin)
+        if executable:
+            return executable
+        if Path(self.conda_bin).is_file():
+            return str(Path(self.conda_bin))
+        raise InvalidToolDefinitionError(f"找不到 conda 可执行文件：{self.conda_bin}")
 
     def iter_index(self):
         names = set()
@@ -305,45 +316,51 @@ class BiocondaAutoWrapAdapter:
             raise InvalidToolDefinitionError("包名或命令名无效，不允许路径、空白或 shell 字符")
         return self.wrapped_dir / pkg_name / cli_cmd
 
-    def prepare(self, pkg_name, cli_cmd):
+    def prepare(self, pkg_name, cli_cmd, binary=None):
         self.location(pkg_name, cli_cmd)
+        conda = self._conda()
         env = self.conda_prefix / f"biows-{pkg_name}"
         if not (env / "conda-meta").exists():
-            subprocess.run(
+            process = subprocess.run(
                 [
-                    "conda",
+                    conda,
                     "create",
                     "-y",
                     "-p",
                     str(env),
+                    "--override-channels",
                     "-c",
                     "conda-forge",
                     "-c",
                     "bioconda",
                     pkg_name,
                 ],
-                check=True,
+                capture_output=True,
+                text=True,
                 timeout=900,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
             )
+            if process.returncode != 0:
+                message = (process.stdout + process.stderr).strip()[-800:]
+                raise InvalidToolDefinitionError(f"conda create 失败：{message}")
         packages = json.loads(
-            subprocess.check_output(["conda", "list", "-p", str(env), "--json"], timeout=30)
+            subprocess.check_output([conda, "list", "-p", str(env), "--json"], timeout=30)
         )
         version = next((p["version"] for p in packages if p["name"] == pkg_name), None)
         if not version:
             raise InvalidToolDefinitionError("环境中未找到指定包")
         help_text = ""
-        for args in (["--help"], ["-h"], ["help"], []):
-            process = subprocess.run(
-                ["conda", "run", "-p", str(env), cli_cmd, *args],
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-            help_text = (process.stdout + process.stderr)[:16384]
-            if process.returncode == 0 and help_text.strip():
-                break
+        with tempfile.TemporaryDirectory(prefix="biows-help-") as scratch:
+            for args in (["--help"], ["-h"], ["help"], []):
+                process = subprocess.run(
+                    [conda, "run", "-p", str(env), binary or cli_cmd, *args],
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    cwd=scratch,
+                )
+                help_text = (process.stdout + process.stderr)[:16384]
+                if process.returncode == 0 and help_text.strip():
+                    break
         return {"help_text": help_text, "version": version, "environment": str(env)}
 
     def validate(self, pkg_name, cli_cmd, data, directory):
@@ -444,11 +461,20 @@ class BiocondaAutoWrapAdapter:
 
 
 class ToolRegistry:
-    def __init__(self, adapters, cache_dir: Path):
+    def __init__(self, adapters, cache_dir: Path, reviewed_path: Path | None = None):
         self.adapters, self.cache_dir = adapters, Path(cache_dir)
+        self.reviewed_path = Path(reviewed_path or self.cache_dir / "reviewed.json")
         self._entries, self._owners, self._specs = {}, {}, {}
         self._lock = threading.RLock()
         self._built = False
+        self._reviewed = self._load_reviewed()
+
+    def _load_reviewed(self):
+        try:
+            data = json.loads(self.reviewed_path.read_text())
+        except (OSError, ValueError):
+            return set()
+        return set(data) if isinstance(data, list) else set()
 
     @classmethod
     def from_config(cls, config):
@@ -463,9 +489,11 @@ class ToolRegistry:
                     config.upstream_dir / "bioconda-recipes",
                     config.data_dir / "auto_wrapped",
                     config.conda_prefix,
+                    config.conda_bin,
                 ),
             ],
             config.cache_dir,
+            config.data_dir / "reviewed.json",
         )
 
     def build_index(self, refresh=False):
@@ -474,6 +502,9 @@ class ToolRegistry:
             for adapter in self.adapters:
                 for entry in cached_entries(adapter, self.cache_dir, refresh):
                     entries[entry.tool_id], owners[entry.tool_id] = entry, adapter
+            for tool_id in self._reviewed:
+                if tool_id in entries:
+                    entries[tool_id] = replace(entries[tool_id], reviewed=True)
             self._entries, self._owners, self._specs = entries, owners, {}
             self._built = True
             atomic_json(self.cache_dir / "index.json", [asdict(item) for item in entries.values()])
@@ -488,7 +519,10 @@ class ToolRegistry:
             if tool_id not in self._owners:
                 raise ToolNotFoundError(f"找不到工具：{tool_id}")
             if tool_id not in self._specs:
-                self._specs[tool_id] = self._owners[tool_id].load_spec(tool_id)
+                spec = self._owners[tool_id].load_spec(tool_id)
+                if tool_id in self._reviewed:
+                    spec = replace(spec, reviewed=True)
+                self._specs[tool_id] = spec
             return self._specs[tool_id]
 
     def categories(self):
@@ -542,13 +576,16 @@ class ToolRegistry:
     def mark_reviewed(self, tool_id):
         self._ensure()
         owner = self._owners.get(tool_id)
-        if not isinstance(owner, BiocondaAutoWrapAdapter) or not tool_id.startswith("auto:"):
-            raise InvalidToolDefinitionError("请先为上游工具提供经审核的自动封装定义")
-        pkg, cmd = tool_id[5:].split("/", 1)
-        path = owner.location(pkg, cmd) / "meta.yaml"
-        data = read_yaml(path)
-        data["biows"]["reviewed"] = True
-        path.write_text(yaml.safe_dump(data, allow_unicode=True))
+        if owner is None:
+            raise ToolNotFoundError(f"找不到工具：{tool_id}")
+        if isinstance(owner, BiocondaAutoWrapAdapter) and tool_id.startswith("auto:"):
+            pkg, cmd = tool_id[5:].split("/", 1)
+            path = owner.location(pkg, cmd) / "meta.yaml"
+            data = read_yaml(path)
+            data.setdefault("biows", {})["reviewed"] = True
+            path.write_text(yaml.safe_dump(data, allow_unicode=True))
         with self._lock:
+            self._reviewed.add(tool_id)
+            atomic_json(self.reviewed_path, sorted(self._reviewed))
             self._specs.pop(tool_id, None)
             self._entries[tool_id] = replace(self._entries[tool_id], reviewed=True)

@@ -43,7 +43,7 @@
 | G2 | 画布编译为标准 `Snakefile`，由 Snakemake 负责 DAG 调度、缓存、断点续跑与环境隔离 | ✅ 已实现，真实 Snakemake 9.27 运行通过 |
 | G3 | 「运行此步」「运行至此节点」「全量运行」，节点边框实时反映状态 | ✅ 已实现并实测 |
 | G4 | 快速文件校验与前 5 条记录预览（FASTA/FASTQ/SAM/BAM/CRAM/VCF/BCF 等） | ✅ 14 种格式验证通过 |
-| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引，实测 15,447 条（wrappers 423、nf-core 2,125、Bioconda 12,889、本机 10）；可自动执行数量仍有限（nf-core 86 个可生成 shell，Bioconda 需按需封装） |
+| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次已封装 37 个 Bioconda CLI（35 个通过合成数据冒烟并审核，13 个待目录/数据库类端口）；seqkit 已通过画布→Snakemake 端到端运行；nf-core 86 个可生成 shell |
 | G6 | 通过 MCP 暴露 7 个高层工具 | ✅ 7 个工具经 stdio 客户端验证；⚠️ 未在 Claude Code/Desktop 中实测 |
 
 ### 1.2 非目标（v1 明确不做）
@@ -197,7 +197,7 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 - `build_index(refresh=False)`：逐适配器读取 `catalog_cache`（`cache_dir/catalog-<source>.json`，以上游 YAML/CWL 文件的路径、mtime、大小与 `.git` 引用计算指纹，指纹不变则直接复用），合并后写 `cache_dir/index.json`；内部加锁并整体替换，可在后台线程调用。
 - `categories()`、`get(tool_id)`（按需加载并缓存 `ToolSpec`）。
 - `search(query, input_format, output_format, category, limit, offset)`：先按格式/分类过滤；每个关键词按「名称完全相等 10 / 名称前缀 6 / 名称或关键词包含 4 / 摘要包含 1」打分，**所有关键词都必须命中**；未审核条目分数减半；`limit` 被限制在 1–50（UI 与 MCP 相同）。
-- `mark_reviewed(tool_id)`：只对 `auto:` 自动封装定义有效，改写其 `meta.yaml` 中的 `biows.reviewed`。
+- `mark_reviewed(tool_id)`：任意已索引工具均可审核；审核结果写入 `data_dir/reviewed.json`，建索引与加载时覆盖 `reviewed`。`auto:` 定义同时改写其 `meta.yaml` 中的 `biows.reviewed`。
 
 #### 5.2.3 阶段一：snakemake-wrappers
 
@@ -223,6 +223,10 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
   4. 校验提交的 YAML：`biows.inputs/outputs/params/shell`，至少一个输入和一个输出，shell 占位符只能引用已声明的端口和参数。
   5. 落盘为 `auto:<pkg>/<cmd>`，固定包版本，`reviewed: false`。
 - 已实现基于 `channeldata.json` 的索引（§15 Q4）；下载与格式校验见 `glue.fetch_catalog`。
+- 创建环境固定 `--override-channels -c conda-forge -c bioconda`，不依赖 defaults 渠道；可执行文件由配置 `conda_bin` 指定。
+- 多子命令工具用 `binary` 参数接入：工具 ID 使用独立命令名（如 `auto:samtools/samtools-faidx`），环境与可执行文件仍为 `samtools`。
+- 批量封装：`python -m glue.wrap_batch --manifest tool_packs/top50.yaml`，清单见 `tool_packs/top50.yaml`，可重复执行并复用已有环境。
+- 运行期：Snakemake 子进程注入 `CONDA_DEFAULT_CHANNELS=""` 与隔离 `CONDARC`，避免 conda 26 默认渠道 ToS 阻塞环境创建；`conda_bin` 所在目录加入子进程 PATH。seqkit 已验证「画布 → Snakemake」端到端运行（2/2 步，输出正确）。
 
 ### 5.3 `glue/snakemake_bridge.py` 与运行监督
 
@@ -526,8 +530,9 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 
 | 层级 | 现有内容 |
 | :--- | :--- |
-| 单元/集成（`tests/test_backend.py`，10 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、文件检查、自动封装定义校验、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
-| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时） |
+| 单元/集成（`tests/test_backend.py`，13 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、文件检查、自动封装定义校验、Top-50 清单定义校验、审核覆盖、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
+| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项） |
+| 端到端（auto 工具） | seqkit 节点经编译与 Snakemake 真实运行，2/2 步完成，stats.tsv 内容正确；Top-50 首批 35/35 合成数据冒烟通过 |
 | 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、`smk:` wrapper 加 Conda 的真实运行、大规模索引性能 |
 
 ---
