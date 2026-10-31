@@ -43,9 +43,8 @@
 | G2 | 画布编译为标准 `Snakefile`，由 Snakemake 负责 DAG 调度、缓存、断点续跑与环境隔离 | ✅ 已实现，真实 Snakemake 9.27 运行通过 |
 | G3 | 「运行此步」「运行至此节点」「全量运行」，节点边框实时反映状态 | ✅ 已实现并实测 |
 | G4 | 快速文件校验与前 5 条记录预览（FASTA/FASTQ/SAM/BAM/CRAM/VCF/BCF 等） | ✅ 14 种格式验证通过 |
-| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 适配器已实现，但上游仓库未下载，规模未实测；当前可用 5 个内置 wrapper + 8 个本机工具 |
+| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引，实测 15,447 条（wrappers 423、nf-core 2,125、Bioconda 12,889、本机 10）；可自动执行数量仍有限（nf-core 86 个可生成 shell，Bioconda 需按需封装） |
 | G6 | 通过 MCP 暴露 7 个高层工具 | ✅ 7 个工具经 stdio 客户端验证；⚠️ 未在 Claude Code/Desktop 中实测 |
-| G7 | 胶水层代码极简（目标 ≤ 2,000 行） | ⚠️ `glue/` 实际 2,341 行（含约 400 行共享契约文件） |
 
 ### 1.2 非目标（v1 明确不做）
 
@@ -189,9 +188,9 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 | 顺序 | 适配器 | `tool_id` 前缀 | 来源 | 现状 |
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | `InstalledToolsAdapter`（`glue/installed_tools.py`） | `local:` | 本机独立 Conda 环境 `~/.cache/biows/common-tools`（可用 `BIOWS_COMMON_ENV` 覆盖） | 8 个节点：fastp、bwa index/mem、samtools view/sort/index、bcftools stats、seqkit stats；只有对应包和可执行文件存在时才出现 |
-| 2 | `SnakemakeWrapperAdapter` | `smk:` | 5 个内置定义（`glue/builtins.py`）+ `upstream_dir/snakemake-wrappers/bio/**/meta.yaml` | 内置可用；上游未下载 |
-| 3 | `NfCoreModuleAdapter` | `nf:` / `cwl:` | `upstream_dir/nf-core-modules` 的 `meta.yml` + `main.nf`，以及其中的 `*.cwl` | 代码完成；上游未下载 |
-| 4 | `BiocondaAutoWrapAdapter` | `conda:` / `auto:` | `upstream_dir/bioconda-recipes/recipes/*` 目录名；已封装定义在 `data_dir/auto_wrapped/<pkg>/<cmd>/meta.yaml` | 代码完成；上游未下载 |
+| 2 | `SnakemakeWrapperAdapter` | `smk:` | 5 个内置定义（`glue/builtins.py`）+ `upstream_dir/snakemake-wrappers/bio/**/meta.yaml` | v5.0.0 已下载并索引 423 条（418 上游 + 5 内置） |
+| 3 | `NfCoreModuleAdapter` | `nf:` / `cwl:` | `upstream_dir/nf-core-modules` 的 `meta.yml` + `main.nf`，以及其中的 `*.cwl` | 稀疏克隆已下载并索引 2,125 个模块；86 个可自动生成 shell |
+| 4 | `BiocondaAutoWrapAdapter` | `conda:` / `auto:` | `upstream_dir/bioconda-recipes/recipes/*` 目录名或 `channeldata.json`；已封装定义在 `data_dir/auto_wrapped/<pkg>/<cmd>/meta.yaml` | channeldata 已索引 12,888 个包；按需封装 |
 
 #### 5.2.2 `ToolRegistry`
 
@@ -203,26 +202,27 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 #### 5.2.3 阶段一：snakemake-wrappers
 
 - 内置 5 个已核对端口契约的定义：`smk:bio/fastp`、`smk:bio/bwa/index`、`smk:bio/bwa/mem`、`smk:bio/samtools/sort`、`smk:bio/samtools/index`，`reviewed=True`。
-- 上游 wrapper：解析 `meta.yaml` 的 `input/output`。字典项的键作为端口名；纯文本描述项命名为 `file_N`；格式由 `infer_formats()` 从通配符和描述文字推断，推断不出则为 `ANY`。这类定义一律 `reviewed=False`、分类 `Other`、只带一个 `extra` 参数。
+- 上游 wrapper：v5.0.0 已下载（423 条：418 上游 + 5 内置）。解析 `meta.yaml` 的 `input/output`：字典项的键作为端口名，非法标识符（如 `Runtime_log.txt`）归一化为 `file_N`；纯文本描述项命名为 `file_N`；格式由 `infer_formats()` 从通配符和描述文字推断，推断不出则为 `ANY`。这类定义一律 `reviewed=False`、分类 `Other`、只带一个 `extra` 参数。
 - **未实现**：v0.1 设想的 `port_overrides.yaml` 覆盖文件；当前只有「内置 → 启发式」两级。
 
 #### 5.2.4 阶段二：nf-core/modules 与 CWL
 
 - 端口来自 nf-core `meta.yml`，兼容新旧两种结构；跳过 `meta`（map）元素，`pattern` 用 `expand_brace_glob()` 展开后映射为格式标签。
 - 命令由 `glue/nf_converter.convert_script()` **保守转换**：只接受 `script:` 前仅有 `task.ext.args/prefix` 默认值的模块；脚本中出现 `${if`、`.collect`、`.join(`、`meta.`、`?:`、`->` 等无法静态求值的结构就放弃转换。转换失败的模块不生成 shell，只能检索、不能运行（需先提供经审核的自动封装定义）。
+- 实测覆盖率：2,125 个模块中 86 个可自动生成 shell（约 4%），其余只能检索、不能直接运行。
 - CWL：识别 `*.cwl` 的静态 `File`/`File[]` 端口和静态输出文件名。执行时编译器生成 job JSON（base64 内联到 Snakefile），由 `python -m glue.cwl_runner` 调用 `cwltool`。
   - 说明：Snakemake 9.27 文档中 `cwl:` 指令**仍然存在**（v0.1 写「已移除」是错误的）。实现选择自带 runner，是为了自行控制 job 生成和静态输出路径；改回原生 `cwl:` 指令列为待办（§15 Q5）。
 
 #### 5.2.5 阶段三：Bioconda 自动封装
 
-- 索引：只用 `bioconda-recipes/recipes/` 下的**目录名**生成 `conda:<pkg>` 条目（`wrapped=False`）。不解析 recipe 的 `meta.yaml`，因为它们是 Jinja2 模板，`yaml.safe_load` 无法解析。
+- 索引：`bioconda-recipes/recipes/` 存在时用其中的**目录名**生成 `conda:<pkg>` 条目；否则读取 `channeldata.json` 的 `packages`（实测 12,888 个包，摘要入索引）。不解析 recipe 的 `meta.yaml`，因为它们是 Jinja2 模板，`yaml.safe_load` 无法解析。
 - 封装（`prepare` → `store_definition`）：
   1. 校验包名、命令名（正则白名单，禁止路径、空白和 shell 字符）。
   2. 若环境不存在，则执行 `conda create -p <conda_prefix>/biows-<pkg>`（超时 900 s）。
   3. `conda run` 依次尝试 `--help`、`-h`、`help`、无参数来抓取帮助文本（截断到 16 KB）。
   4. 校验提交的 YAML：`biows.inputs/outputs/params/shell`，至少一个输入和一个输出，shell 占位符只能引用已声明的端口和参数。
   5. 落盘为 `auto:<pkg>/<cmd>`，固定包版本，`reviewed: false`。
-- **未实现**：基于 `channeldata.json` 的索引（配置项已预留）。
+- 已实现基于 `channeldata.json` 的索引（§15 Q4）；下载与格式校验见 `glue.fetch_catalog`。
 
 ### 5.3 `glue/snakemake_bridge.py` 与运行监督
 
@@ -527,7 +527,7 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 | 层级 | 现有内容 |
 | :--- | :--- |
 | 单元/集成（`tests/test_backend.py`，10 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、文件检查、自动封装定义校验、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
-| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check` |
+| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时） |
 | 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、`smk:` wrapper 加 Conda 的真实运行、大规模索引性能 |
 
 ---
@@ -557,7 +557,7 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 | Q1 | 多样本通配符 | v2 |
 | Q2 | 内存资源暴露 | M3 |
 | Q3 | MCP 在 UI 未打开时运行 | 允许；状态持久化，UI 打开后可在运行历史中查看 |
-| Q4 | Bioconda 索引改用 `channeldata.json` | 待实现（可得到摘要与版本信息） |
+| Q4 | Bioconda 索引改用 `channeldata.json` | ✅ 已实现；recipes 缺失时读取 channeldata（12,888 包），下载见 `glue.fetch_catalog` |
 | Q5 | CWL 是否改用 Snakemake 原生 `cwl:` 指令 | 待评估 |
 | Q6 | MCP sampling 自动封装路径 | 待实现 |
 

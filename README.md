@@ -75,7 +75,7 @@ flowchart TD
 
 ### 工具与配置
 
-当前有 5 个内置 wrapper 定义（fastp、BWA index/mem、SAMtools sort/index）与 8 个本机工具节点（fastp、BWA index/mem、SAMtools view/sort/index、BCFtools stats、SeqKit stats）。本机节点仅在相应包和可执行文件存在时出现。可用以下命令建立本机环境：
+开箱可运行的是 5 个内置 wrapper 定义（fastp、BWA index/mem、SAMtools sort/index）与 8 个本机工具节点（fastp、BWA index/mem、SAMtools view/sort/index、BCFtools stats、SeqKit stats）。此外可用 `python -m glue.fetch_catalog --all` 下载上游元数据，索引 snakemake-wrappers、nf-core/modules 与 Bioconda 共 15,447 条；其中可直接执行的数量见“当前限制”。本机节点仅在相应包和可执行文件存在时出现。可用以下命令建立本机环境：
 
 ```bash
 conda create -y --solver libmamba --override-channels \
@@ -106,7 +106,7 @@ WSMV 案例用 12 个 RNA-seq 文库跑通了从工具接线、真实运行到�
 
 ## 当前限制
 
-- 工具生态尚小：5 个内置 wrapper 定义与 8 个条件可用的本机节点。snakemake-wrappers、nf-core、Bioconda 上游仓库尚未下载，适配器的生态规模是架构支持，未实测。
+- 可检索规模已实测：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。但可直接执行的仍限于 5 个内置 wrapper 定义与 8 个条件可用的本机节点；nf-core 仅 86 个模块可自动生成 shell，Bioconda 条目需按需封装并审核。
 - `smk:` wrapper + Conda 环境链路从未真实跑通，不能把本机工具运行当作该链路的验证。首次获取 wrapper / 环境需要网络与可用 Conda。
 - MCP 已验证 stdio 接口，尚未在真实 Agent 客户端（如 Claude Desktop）中实测。
 - Linux 单机，无多用户、远程协作或集群配置界面；无多样本通配符展开，使用多条节点链。

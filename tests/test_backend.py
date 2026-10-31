@@ -208,6 +208,22 @@ def test_definition_validation(tmp_path):
         )
 
 
+def test_bioconda_channeldata_index(tmp_path):
+    root = tmp_path / "bioconda"
+    root.mkdir()
+    (root / "channeldata.json").write_text(
+        json.dumps({"packages": {"fastqc": {"summary": "Quality control"}, "bwa": {}}}),
+        encoding="utf-8",
+    )
+    adapter = BiocondaAutoWrapAdapter(root, tmp_path / "wrapped", tmp_path / "envs")
+    entries = {entry.tool_id: entry for entry in adapter.iter_index()}
+    assert entries["conda:fastqc"].summary == "Quality control"
+    assert entries["conda:bwa"].wrapped is False
+    assert entries["conda:bwa"].reviewed is False
+    registry = ToolRegistry([adapter], tmp_path / "cache")
+    assert registry.search("fastqc").total == 1
+
+
 def test_logs():
     state = RunStatus("id", "all", node_states={"aaaaaaaa": "waiting"})
     jobs = {}

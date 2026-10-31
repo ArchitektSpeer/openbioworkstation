@@ -54,36 +54,72 @@ def read_yaml(path):
 
 
 def metadata_ports(value):
-    """Flatten old/new nf-core tuples and wrapper free-text fields."""
+    """Flatten nf-core channel tuples and wrapper free-text fields into ports."""
+
+    def valid(name):
+        return bool(NAME.fullmatch(name)) and not keyword.iskeyword(name)
+
     ports = {}
 
-    def visit(obj):
-        if isinstance(obj, list):
-            for item in obj:
-                visit(item)
-        elif isinstance(obj, dict):
-            for name, detail in obj.items():
-                if isinstance(detail, dict) and (
-                    detail.get("type") == "file" or "pattern" in detail
+    def add(name, detail):
+        key = name if valid(name) else f"file_{len(ports) + 1}"
+        pattern = str(detail.get("pattern", ""))
+        description = str(detail.get("description", ""))
+        if not pattern and not valid(name):
+            pattern = name
+        ports[key] = PortSpec(
+            key,
+            infer_formats(f"{pattern} {description}".strip()),
+            bool(detail.get("multiple", False)),
+            bool(detail.get("optional", False)),
+            pattern,
+            description,
+        )
+
+    def channel_detail(obj):
+        detail = {}
+
+        def walk(item):
+            if isinstance(item, dict):
+                if item.get("type") == "map":
+                    return
+                for key in ("pattern", "description"):
+                    if key in item:
+                        detail.setdefault(key, item[key])
+                for key, nested in item.items():
+                    if key != "meta" and key not in ("pattern", "description"):
+                        walk(nested)
+            elif isinstance(item, list):
+                for nested in item:
+                    walk(nested)
+
+        walk(obj)
+        return detail
+
+    def visit(item):
+        if isinstance(item, list):
+            for nested in item:
+                visit(nested)
+        elif isinstance(item, dict):
+            for name, detail in item.items():
+                name = str(name)
+                if name == "meta":
+                    continue
+                if isinstance(detail, dict) and detail.get("type") in (
+                    "map",
+                    "boolean",
+                    "string",
+                    "integer",
+                    "float",
+                    "number",
                 ):
-                    identifier(str(name))
-                    pattern = str(detail.get("pattern", ""))
-                    ports[name] = PortSpec(
-                        name,
-                        infer_formats(pattern + " " + str(detail.get("description", ""))),
-                        bool(detail.get("multiple", False)),
-                        bool(detail.get("optional", False)),
-                        pattern,
-                        str(detail.get("description", "")),
-                    )
-                elif isinstance(detail, (dict, list)):
-                    visit(detail)
-                elif isinstance(detail, str) and name != "meta":
-                    identifier(str(name))
-                    ports[name] = PortSpec(name, infer_formats(detail), description=detail)
-        elif isinstance(obj, str):
-            name = f"file_{len(ports) + 1}"
-            ports[name] = PortSpec(name, infer_formats(obj), description=obj)
+                    continue
+                if isinstance(detail, (dict, list)):
+                    add(name, channel_detail(detail))
+                elif isinstance(detail, str):
+                    add(name, {"description": detail})
+        elif isinstance(item, str):
+            add(f"file_{len(ports) + 1}", {"description": item})
 
     visit(value)
     return tuple(ports.values())
@@ -234,11 +270,33 @@ class BiocondaAutoWrapAdapter:
         )
 
     def iter_index(self):
+        names = set()
         for path in sorted((self.root / "recipes").glob("*/meta.yaml")):
             name = path.parent.name
+            names.add(name)
             yield IndexEntry(
                 f"conda:{name}", name, "Bioconda", self.source, wrapped=False, reviewed=False
             )
+        channeldata = self.root / "channeldata.json"
+        if channeldata.is_file():
+            try:
+                packages = json.loads(channeldata.read_text()).get("packages", {})
+            except (OSError, ValueError):
+                packages = {}
+            if isinstance(packages, dict):
+                for name, detail in sorted(packages.items()):
+                    if name in names:
+                        continue
+                    summary = detail.get("summary", "") if isinstance(detail, dict) else ""
+                    yield IndexEntry(
+                        f"conda:{name}",
+                        name,
+                        "Bioconda",
+                        self.source,
+                        summary=str(summary)[:300],
+                        wrapped=False,
+                        reviewed=False,
+                    )
         for path in sorted(self.wrapped_dir.glob("*/*/meta.yaml")):
             yield index_entry(self.load_spec(f"auto:{path.parent.parent.name}/{path.parent.name}"))
 

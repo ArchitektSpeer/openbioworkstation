@@ -23,7 +23,11 @@ def fingerprint(adapter):
                 + list(root.rglob("meta.yml"))
                 + list(root.rglob("*.cwl"))
             )
-            paths += [root / ".git/HEAD", root / ".git/packed-refs"]
+            paths += [
+                root / "channeldata.json",
+                root / ".git/HEAD",
+                root / ".git/packed-refs",
+            ]
             for path in sorted(paths):
                 if path.is_file():
                     stat = path.stat()
