@@ -43,7 +43,7 @@
 | G2 | 画布编译为标准 `Snakefile`，由 Snakemake 负责 DAG 调度、缓存、断点续跑与环境隔离 | ✅ 已实现，真实 Snakemake 9.27 运行通过 |
 | G3 | 「运行此步」「运行至此节点」「全量运行」，节点边框实时反映状态 | ✅ 已实现并实测 |
 | G4 | 快速文件校验与前 5 条记录预览（FASTA/FASTQ/SAM/BAM/CRAM/VCF/BCF 等） | ✅ 14 种格式验证通过 |
-| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次已封装 37 个 Bioconda CLI（35 个通过合成数据冒烟并审核，13 个待目录/数据库类端口）；seqkit 已通过画布→Snakemake 端到端运行；nf-core 86 个可生成 shell |
+| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次已封装 37 个 Bioconda CLI（37/37 合成数据冒烟通过并审核，13 个待目录/数据库类端口）；seqkit / fastp（smk + Conda）/ bcftools query（真实 VCF）均已端到端验证；nf-core 86 个可生成 shell |
 | G6 | 通过 MCP 暴露 7 个高层工具 | ✅ 7 个工具经 stdio 客户端验证；⚠️ 未在 Claude Code/Desktop 中实测 |
 
 ### 1.2 非目标（v1 明确不做）
@@ -532,8 +532,8 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 | :--- | :--- |
 | 单元/集成（`tests/test_backend.py`，13 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、文件检查、自动封装定义校验、Top-50 清单定义校验、审核覆盖、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
 | 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项） |
-| 端到端（auto 工具） | seqkit 节点经编译与 Snakemake 真实运行，2/2 步完成，stats.tsv 内容正确；Top-50 首批 35/35 合成数据冒烟通过 |
-| 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、`smk:` wrapper 加 Conda 的真实运行、大规模索引性能 |
+| 端到端 | auto 工具 `seqkit`（合成 FASTQ）、`smk:bio/fastp`（wrapper + Conda）、auto `bcftools query`（课题真实 VCF）均经编译与 Snakemake 真实运行通过；Top-50 首批 37/37 合成数据冒烟通过 |
+| 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、大规模索引性能 |
 
 ---
 
@@ -541,7 +541,7 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 
 | 里程碑 | 验收标准 | 状态 |
 | :--- | :--- | :--- |
-| M1 | 命令行下：检查文件、搜索工具、构造会话、编译、`snakemake -n` 通过；演示链路真实运行且状态解析正确 | ⚠️ 基本完成。真实运行的是 `local:` 节点组成的 fastp→bwa→samtools→bcftools 链路和离线演示链路；`smk:` wrapper 加 Conda 的链路未真实运行（需要联网） |
+| M1 | 命令行下：检查文件、搜索工具、构造会话、编译、`snakemake -n` 通过；演示链路真实运行且状态解析正确 | ✅ 完成。`local:` 节点链路、离线演示链路与 `smk:` fastp + Conda 链路均已真实运行 |
 | M2 | UI 完成 §6.1；MCP 在 Claude Code/Desktop 中完成 §6.2；UI 实时看到 MCP 的修改与运行 | ⚠️ UI 流程与 UI↔MCP 同步已实测；MCP 只用自写 stdio 客户端验证，未在真实 Agent 客户端中实测 |
 | M3（可选） | nf-core 转换覆盖率、Snakemake logger 插件、多样本通配符、端口覆盖文件 | ❌ 未开始 |
 

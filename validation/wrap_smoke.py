@@ -33,6 +33,11 @@ FASTA4 = (
     ">s1\nACGTACGTACGT\n>s2\nACGTACGTACGA\n>s3\nACGTTCGTACGT\n>s4\nACGTACGTTCGT\n"
 )
 FASTQ = "@r1\nACGTACGTACGT\n+\nIIIIIIIIIIII\n@r2\nTTTTAAAACCCC\n+\nIIIIIIIIIIII\n"
+PROTEINS = ">prot1\nMKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQ\n>prot2\nAAAAAAAAGGGGGGGGCCCCCCCC\n"
+HMM_ALIGNMENT = (
+    ">a\nMKTAYIAKQRQISFVKSHFSRQ\n>b\nMKTAYIAKQRQISFVKSHFSRQ\n"
+    ">c\nMKTAYIAKQRQISFVKSHFSRE\n"
+)
 BED = "chr1\t10\t20\nchr1\t15\t30\nchr2\t5\t10\n"
 BED_B = "chr1\t12\t18\n"
 VCF = (
@@ -105,6 +110,8 @@ RECIPES = {
         "files": {"sequence_a": ("a.fa", ">a\nACGTACGTACGT\n"), "sequence_b": ("b.fa", ">b\nACGTTCGTACGT\n")}
     },
     "auto:trnascan-se/tRNAscan-SE": {"files": {"genome": ("genome.fa", CONTIG)}},
+    "auto:hmmer/hmmsearch": {"hmm": True, "files": {"sequences": ("prot.fa", PROTEINS)}},
+    "auto:barrnap/barrnap": {"files": {"genome": ("genome.fa", CONTIG)}},
 }
 
 
@@ -158,6 +165,25 @@ def run_tool(config, registry, tool_id, conda, timeout):
                 if "BAM" in port.formats and f"input.{port.name}" not in values:
                     values[f"input.{port.name}"] = str(path)
                     break
+        if recipe.get("hmm"):
+            alignment = work / "aln.fa"
+            alignment.write_text(HMM_ALIGNMENT)
+            model = work / "model.hmm"
+            subprocess.run(
+                [
+                    conda,
+                    "run",
+                    "-p",
+                    str(env),
+                    "bash",
+                    "-lc",
+                    f"hmmbuild {shlex.quote(str(model))} {shlex.quote(str(alignment))} >/dev/null",
+                ],
+                check=True,
+                capture_output=True,
+                timeout=timeout,
+            )
+            values["input.hmm"] = str(model)
         if recipe.get("bgzip"):
             source = work / "in.vcf"
             source.write_text(VCF)
