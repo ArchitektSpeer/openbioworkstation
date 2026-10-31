@@ -1,0 +1,9 @@
+NodeGraphQt>=0.6.40
+PySide6>=6.6
+snakemake>=8.20,<10
+pyfastx>=2.1
+pysam>=0.22
+cyvcf2>=0.31
+pyyaml>=6.0
+mcp[cli]>=1.2,<2
+setuptools>=70

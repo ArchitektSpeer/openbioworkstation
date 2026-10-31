@@ -1,0 +1,25 @@
+[project]
+name = "openbioworkstation"
+version = "0.1.0"
+description = "生物信息学可视化节点工作站：NodeGraphQt + Snakemake + MCP 的纯胶水层"
+requires-python = ">=3.11"
+# 运行依赖以 requirements.txt 为准，此处只放工具链配置。
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "C4"]
+# 中文字符串较长时允许超出行宽（代码本身由 ruff format 控制）
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["glue", "ui", "mcp_server"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: 需要 conda 与网络的真实运行测试"]

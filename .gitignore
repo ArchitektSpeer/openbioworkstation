@@ -1,0 +1,19 @@
+# All study material remains local. Promo assets are explicit, curated copies.
+/studies/
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+.snakemake/
+.claude/
+validation/tmp-*/
+/common_tools_workspace/
+/demo_workspace/
+*.bam
+*.fastq.gz
+# Historical machine-specific validation records stay local; retain checks.
+/validation/*
+!/validation/*.py
+# Original private implementation brief is not public documentation.
+/bio_workstation_claude_prompt.md
