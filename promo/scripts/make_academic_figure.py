@@ -1,4 +1,4 @@
-"""Compose a bilingual software overview using original screenshots and figure panels."""
+"""Compose an English software overview using original screenshots and figure panels."""
 
 from math import atan2, cos, sin
 
@@ -40,7 +40,7 @@ def main():
 
     def panel(x, y, label, cn, en):
         txt(x, y, label, 50, ACCENT, True)
-        txt(x + 78, y, cn, 45, INK, True)
+        txt(x + 78, y, cn, 39, INK, True)
         txt(x + 78, y + 65, en, 32, MUTED)
 
     def image(name, box):
@@ -58,68 +58,68 @@ def main():
         txt(x + (w - tw) / 2, y + 80, subtitle, 28, MUTED)
 
     txt(130, 95, "OpenBioWorkstation", 118, INK, True)
-    txt(135, 265, "生物信息学工作流的可视化构建与执行", 64, INK)
-    txt(137, 362, "Visual construction and execution of bioinformatics workflows", 43, MUTED)
+    txt(135, 265, "Visual bioinformatics workflows", 64, INK)
+    txt(137, 362, "Workflow construction, agent access and local execution", 43, MUTED)
     line(130, 470, 3470, 470, INK, 3)
 
-    panel(130, 525, "a", "工作流编辑", "Workflow editor")
+    panel(130, 525, "a", "Workflow editor", "Visual workflow construction")
     image("canvas", (130, 680, 2380, 1428))
-    txt(130, 2140, "WSMV 案例工作流：多条样本链共享参考序列与索引。", 36)
+    txt(130, 2140, "WSMV workflow: sample chains share a reference and index.", 36)
     txt(
         130,
         2200,
-        "WSMV case workflow with a shared reference and index across sample chains.",
+        "The actual case workflow includes case-specific analysis nodes.",
         29,
         MUTED,
     )
 
     line(2580, 535, 2580, 2230)
-    panel(2660, 525, "b", "接口与执行", "Interfaces and execution")
-    txt(2660, 675, "研究者确定分析方案与参数", 35)
-    txt(2660, 730, "Researcher: study design and parameters", 28, MUTED)
-    box(2660, 840, 350, 145, "图形界面", "NodeGraphQt")
+    panel(2660, 525, "b", "Interfaces and execution", "MCP and desktop access")
+    txt(2660, 675, "Researcher defines methods", 35)
+    txt(2660, 730, "Review parameters and interpret results", 28, MUTED)
+    box(2660, 840, 350, 145, "Desktop UI", "NodeGraphQt")
     box(3100, 840, 370, 145, "Agent", "MCP / stdio")
     arrow(2835, 985, 2835, 1080)
     arrow(3285, 985, 3285, 1080)
     line(2835, 1080, 3285, 1080, ACCENT, 4)
     arrow(3060, 1080, 3060, 1150)
-    box(2660, 1150, 810, 165, "共享工作区 / Shared workspace", "session.json · revision checks")
+    box(2660, 1150, 810, 165, "Shared workspace", "session.json · revision checks")
     arrow(3060, 1315, 3060, 1420)
-    box(2660, 1420, 810, 165, "工作流编译 / Workflow compilation", "Snakefile")
+    box(2660, 1420, 810, 165, "Workflow compilation", "Snakefile")
     arrow(3060, 1585, 3060, 1690)
-    box(2660, 1690, 810, 165, "任务执行 / Workflow execution", "Snakemake")
+    box(2660, 1690, 810, 165, "Workflow execution", "Snakemake")
     arrow(3060, 1855, 3060, 1960)
-    box(2660, 1960, 810, 165, "执行记录 / Execution records", "run ID · logs · outputs")
-    txt(2660, 2160, "结构示意 / Architecture schematic", 29, MUTED)
+    box(2660, 1960, 810, 165, "Execution records", "run ID · logs · outputs")
+    txt(2660, 2160, "Architecture schematic", 29, MUTED)
 
     line(130, 2290, 3470, 2290)
     # A compact case caption, rather than turning a limited negative result into a headline.
     txt(130, 2340, "c", 50, ACCENT, True)
-    txt(208, 2340, "应用案例 / Application case", 43, INK, True)
+    txt(208, 2340, "Application case", 43, INK, True)
     txt(
         208,
         2425,
-        "WSMV / TriMV 共感染分析：12 个 RNA-seq 文库；73 个受检位点均未达到 FDR < 0.10。",
+        "WSMV / TriMV coinfection: 12 RNA-seq libraries; no tested site (0/73) reached FDR < 0.10.",
         39,
     )
     txt(
         208,
         2490,
-        "WSMV / TriMV coinfection: 12 RNA-seq libraries; none of 73 tested sites reached FDR < 0.10.",
+        "The negative result does not establish absence of an effect or statistical equivalence.",
         32,
         MUTED,
     )
     txt(
         208,
         2560,
-        "案例含专用节点；阴性结果不证明统计等效。MCP 已验证 stdio 接口，客户端兼容性需另行检验。",
+        "Case-specific nodes are included. The MCP stdio interface has been exercised.",
         32,
         MUTED,
     )
     txt(
         208,
         2612,
-        "Case-specific nodes are included; the negative result does not establish equivalence. Agent-client compatibility requires separate testing.",
+        "Check end-user agent compatibility separately. Case analyses were not rerun for this figure.",
         27,
         MUTED,
     )

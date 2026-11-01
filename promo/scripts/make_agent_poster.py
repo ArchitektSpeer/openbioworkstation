@@ -23,16 +23,37 @@ def main():
         d.line((180, y, 3328, y), fill=LINE, width=3)
 
     text(180, 135, "OpenBioWorkstation", 144, bold=True)
-    text(185, 355, "面向 Agent 协作的生物信息学工作站", 91, bold=True)
-    text(185, 505, "A bioinformatics workstation for researcher-agent collaboration", 51, MUTED)
-    text(185, 630, "节点图构建  ·  Snakemake 执行  ·  MCP 接口  ·  本地运行记录", 46, BLUE)
+    text(185, 355, "A workstation for agent-assisted bioinformatics", 91, bold=True)
+    text(185, 505, "On-demand tool adaptation and inspectable workflow execution", 51, MUTED)
+    text(
+        185,
+        630,
+        "Visual workflows  ·  Snakemake execution  ·  MCP access  ·  Local run records",
+        46,
+        BLUE,
+    )
     line(775)
 
-    text(180, 835, "研究者、Agent 与工作站的协作分工", 62, bold=True)
+    text(180, 835, "Researcher, agent and workstation", 62, bold=True)
     roles = [
-        (180, "研究者", "确定研究问题与分析方案", "审查方法、参数与结果解释"),
-        (1260, "Agent / MCP", "检索工具、构建流程", "发起运行并检查输出"),
-        (2340, "工作站 / Snakemake", "执行分析流程", "关联节点图、日志与结果文件"),
+        (
+            180,
+            "Researcher",
+            "Define the question and methods",
+            "Review parameters and interpretation",
+        ),
+        (
+            1260,
+            "Agent / MCP",
+            "Discover tools and build workflows",
+            "Start runs and inspect outputs",
+        ),
+        (
+            2340,
+            "Workstation / Snakemake",
+            "Execute the analysis workflow",
+            "Retain graphs, logs and output files",
+        ),
     ]
     for x, title, first, second in roles:
         text(x, 965, title, 52, BLUE, True)
@@ -43,30 +64,47 @@ def main():
     text(
         180,
         2700,
-        "WSMV 案例工作流局部：多条样本链共享参考序列与索引；包含案例专用节点。",
+        "WSMV workflow excerpt: sample chains share a reference and index. Case-specific nodes are included.",
         38,
         MUTED,
     )
-    text(180, 2780, "支持端口格式检查、执行状态显示、局部重新执行与文件预览。", 42)
+    text(180, 2780, "Port format checks, execution states, partial reruns and file previews.", 42)
     line(2890)
 
-    text(180, 2940, "工具接入与检索规模", 60, bold=True)
-    text(2510, 2960, "本机快照 / 2026-11-01", 37, MUTED)
+    text(180, 2940, "Tool integration and discovery", 60, bold=True)
+    text(2510, 2960, "Local snapshot / 2026-11-01", 37, MUTED)
     text(180, 3040, str(counts["auto_wrapped_packages"]), 177, BLUE, True)
     text(1770, 3040, f"{counts['indexed_entries']:,}", 177, BLUE, True)
-    text(190, 3260, "个软件包已在本机建立封装", 46)
-    text(1780, 3260, "条可检索工具索引", 46)
-    text(180, 3380, "78 个封装节点 + 5 个内置 wrapper 定义 + 10 个本机节点 = 93 个节点定义", 42)
-    text(180, 3470, "其中 62 个带审核标记；工具审核工作正在逐步推进。", 45, bold=True)
-    text(180, 3560, "软件包、节点与索引采用不同统计口径；可检索不等于可直接执行。", 37, MUTED)
+    text(190, 3260, "software packages adapted locally", 46)
+    text(1780, 3260, "searchable catalog entries", 46)
+    text(
+        180,
+        3380,
+        "78 adapted nodes + 5 built-in wrappers + 10 local nodes = 93 node definitions",
+        42,
+    )
+    text(
+        180,
+        3470,
+        "62 nodes carry review flags; tool review is progressing incrementally.",
+        45,
+        bold=True,
+    )
+    text(
+        180,
+        3560,
+        "Packages, nodes and catalog entries are distinct counts. Indexed entries are not necessarily executable.",
+        37,
+        MUTED,
+    )
     line(3670)
 
-    text(180, 3725, "LLM 辅助工具自动适配", 60, bold=True)
+    text(180, 3725, "On-demand tool adaptation with an LLM", 60, bold=True)
     stages = [
-        (180, "提取工具帮助", "创建依赖环境"),
-        (1000, "LLM 生成定义", "描述端口与命令"),
-        (1820, "检查与试运行", "检查结构及合成输入"),
-        (2640, "审查后使用", "核对定义并标记审核"),
+        (180, "Extract CLI help", "Prepare the environment"),
+        (1000, "Generate a definition", "Describe ports and commands"),
+        (1820, "Check and trial", "Test with synthetic inputs"),
+        (2640, "Review before use", "Inspect and mark reviewed"),
     ]
     for i, (x, title, sub) in enumerate(stages):
         d.rectangle((x, 3860, x + 688, 4070), fill="#f2f5f7")
@@ -75,22 +113,30 @@ def main():
         if i < 3:
             text(x + 720, 3915, "→", 54, BLUE)
     text(
-        180, 4130, "需配置模型接口与工具依赖环境；生成定义及试运行不能替代真实数据验证。", 37, MUTED
+        180,
+        4130,
+        "Configure the model endpoint and dependencies. Generation and synthetic trials do not validate real-data analysis.",
+        37,
+        MUTED,
     )
     text(
-        180, 4200, "本机封装不代表随仓库默认安装；具体 Agent 客户端的兼容性需单独检验。", 37, MUTED
+        180,
+        4200,
+        "Local adaptations are not installed by default. Check compatibility with each end-user agent client.",
+        37,
+        MUTED,
     )
     line(4310)
 
-    text(180, 4370, "应用案例：WSMV / TriMV 共感染分析", 46, bold=True)
+    text(180, 4370, "Application case: WSMV / TriMV coinfection", 46, bold=True)
     text(
         180,
         4455,
-        "12 个 RNA-seq 文库；73 个受检位点均未达到 FDR < 0.10。阴性结果不证明统计等效。",
+        "12 RNA-seq libraries; no tested site (0/73) reached FDR < 0.10. The result does not establish equivalence.",
         36,
         MUTED,
     )
-    text(180, 4540, "开源代码、Agent 协作教程与研究案例", 45, BLUE)
+    text(180, 4540, "Source code, agent tutorial and research examples", 45, BLUE)
     line(4655)
     text(180, 4710, "github.com/ArchitektSpeer/openbioworkstation", 51, BLUE, True)
     text(180, 4800, "Linux  ·  GNU GPL v3.0", 34, MUTED)

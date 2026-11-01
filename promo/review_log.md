@@ -69,3 +69,9 @@ The original screenshot assets were preserved. Card annotations and the A3 poste
 ## 2026-11-01 许可证标注更新
 
 项目许可证调整为 GPL-3.0-only。已重建各版海报、九宫格及软件概览图，使许可证标注一致；两份海报 PDF 经 Poppler 渲染查看，未见页脚文字重叠或截断。原有研究 PDF 保持不变。
+
+## 2026-11-01 English project descriptions and communication materials
+
+The repository description, project metadata and communication copy were changed to English. Both poster layouts, both nine-card sets and the software overview were rebuilt with English annotations. Original interface screenshots and research PDFs were preserved. All README files, software interface labels, CLI messages and business-code comments remain unchanged.
+
+The two poster PDFs were rendered with Poppler and visually inspected. Both card sheets and the overview preview were also inspected; no annotation overlap or clipping was observed. Longer English card headings are fitted to the available width. Tool counts and GPL-3.0-only licensing remain unchanged. This update did not rerun research analyses or expand tool validation.

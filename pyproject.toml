@@ -1,7 +1,7 @@
 [project]
 name = "openbioworkstation"
 version = "0.1.0"
-description = "面向本地生物信息学分析的可视化工作流构建与执行平台"
+description = "A visual bioinformatics workstation for agent collaboration and on-demand tool adaptation"
 requires-python = ">=3.11"
 license = "GPL-3.0-only"
 license-files = ["LICENSE", "NOTICE"]

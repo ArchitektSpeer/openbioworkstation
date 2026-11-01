@@ -20,7 +20,11 @@ def font(n, bold=False):
 
 
 def text(im, xy, s, n=32, color=INK, bold=False):
-    ImageDraw.Draw(im).text(xy, s, font=font(n, bold), fill=color)
+    draw = ImageDraw.Draw(im)
+    max_width = im.width - xy[0] - (56 if im.width == 1080 else 160)
+    while draw.textlength(s, font=font(n, bold)) > max_width and n > 20:
+        n -= 1
+    draw.text(xy, s, font=font(n, bold), fill=color)
 
 
 def photo(im, name, box, crop=None):
