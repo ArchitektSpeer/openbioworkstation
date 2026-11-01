@@ -17,6 +17,7 @@ from glue.errors import WorkstationError
 from glue.formats import formats_compatible
 from glue.session_store import load_session, save_session
 from glue.snakemake_bridge import RunManager, compile_session
+from glue.wrap_service import WrapService
 from glue.wrapper_registry import BiocondaAutoWrapAdapter, ToolRegistry
 
 DEFINITION_EXAMPLE = """name: example
@@ -33,6 +34,7 @@ biows:
 def create_server(config, registry=None):
     registry = registry or ToolRegistry.from_config(config)
     manager = RunManager(config.workspace, registry, config)
+    wrap_service = WrapService(config, registry)
     mcp = FastMCP("openbioworkstation")
 
     def compile_current(allow_unreviewed=False):
@@ -264,6 +266,16 @@ def create_server(config, registry=None):
             result = await asyncio.to_thread(inspect_bio_file, str(safe), full_stats=full_stats)
             results.append(result.to_dict())
         return {"files": results, "truncated": len(paths) > 10}
+
+    @mcp.tool()
+    async def wrap_tool(tool_id: str) -> dict:
+        """Start on-demand wrapping/checking for conda:<pkg> or auto:<pkg>/<cmd>."""
+        return await asyncio.to_thread(wrap_service.submit, tool_id)
+
+    @mcp.tool()
+    async def get_wrap_job(job_id: str) -> dict:
+        """Return one wrapping job's status, help text and generated definition."""
+        return await asyncio.to_thread(wrap_service.job, job_id)
 
     return mcp
 

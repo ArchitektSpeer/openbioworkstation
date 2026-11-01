@@ -316,8 +316,9 @@ class BiocondaAutoWrapAdapter:
             raise InvalidToolDefinitionError("包名或命令名无效，不允许路径、空白或 shell 字符")
         return self.wrapped_dir / pkg_name / cli_cmd
 
-    def prepare(self, pkg_name, cli_cmd, binary=None, dependencies=()):
-        self.location(pkg_name, cli_cmd)
+    def ensure_env(self, pkg_name, dependencies=()):
+        if not PACKAGE.fullmatch(pkg_name):
+            raise InvalidToolDefinitionError("包名无效：不允许路径、空白或 shell 字符")
         conda = self._conda()
         env = self.conda_prefix / f"biows-{pkg_name}"
         if not (env / "conda-meta").exists():
@@ -349,6 +350,12 @@ class BiocondaAutoWrapAdapter:
         version = next((p["version"] for p in packages if p["name"] == pkg_name), None)
         if not version:
             raise InvalidToolDefinitionError("环境中未找到指定包")
+        return env, version
+
+    def prepare(self, pkg_name, cli_cmd, binary=None, dependencies=()):
+        self.location(pkg_name, cli_cmd)
+        conda = self._conda()
+        env, version = self.ensure_env(pkg_name, dependencies)
         help_text = ""
         with tempfile.TemporaryDirectory(prefix="biows-help-") as scratch:
             for args in (["--help"], ["-h"], ["help"], []):

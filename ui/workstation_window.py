@@ -29,6 +29,8 @@ from glue.formats import formats_compatible
 from glue.models import Config, IndexEntry, InspectResult, RunMode, RunStatus, ToolSpec
 from glue.session_store import load_session, read_revision, sanitize_session, save_session
 from glue.snakemake_bridge import RunManager, compile_session
+from glue.wrap_service import TERMINAL as WRAP_TERMINAL
+from glue.wrap_service import WrapService
 from glue.wrapper_registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -347,6 +349,7 @@ class ToolLibraryWidget(QtWidgets.QWidget):
     """左侧工具库：分类懒展开；输入关键词后切换为平铺的检索结果。"""
 
     activated = QtCore.Signal(str)
+    wrap_requested = QtCore.Signal(str)
 
     def __init__(self, registry: ToolRegistry, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
@@ -364,6 +367,8 @@ class ToolLibraryWidget(QtWidgets.QWidget):
         self._tree.setDragEnabled(True)
         self._tree.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragOnly)
         self._tree.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self._tree.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+        self._tree.customContextMenuRequested.connect(self._on_context_menu)
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -431,6 +436,20 @@ class ToolLibraryWidget(QtWidgets.QWidget):
     def _on_double_clicked(self, index: QtCore.QModelIndex) -> None:
         if payload := index.data(PAYLOAD_ROLE):
             self.activated.emit(payload)
+
+    def _on_context_menu(self, position: QtCore.QPoint) -> None:
+        index = self._tree.indexAt(position)
+        payload = index.data(PAYLOAD_ROLE) if index.isValid() else ""
+        if not payload or not payload.startswith(TOOL_MIME_PREFIX):
+            return
+        tool_id = payload.removeprefix(TOOL_MIME_PREFIX)
+        menu = QtWidgets.QMenu(self)
+        if tool_id.startswith(("conda:", "auto:")):
+            menu.addAction(
+                "按需封装/校验（后台）", lambda: self.wrap_requested.emit(tool_id)
+            )
+        if menu.actions():
+            menu.exec(self._tree.viewport().mapToGlobal(position))
 
     @staticmethod
     def _category_item(text: str, category: str) -> QtGui.QStandardItem:
@@ -552,6 +571,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.registry = registry
         self.workdir = config.workspace
         self.run_manager = RunManager(self.workdir, registry, config)
+        self.wrap_service = WrapService(config, registry)
+        self._wrap_timer: QtCore.QTimer | None = None
+        self._wrap_seen: set[str] = set()
 
         self._revision = 0
         self._declined_revision: int | None = None
@@ -570,6 +592,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.graph.widget)
         self._setup_graph()
         self._setup_docks()
+        self.library.wrap_requested.connect(self._start_wrap)
         self._setup_menus()
         self._setup_toolbar()
         self._setup_status_bar()
@@ -754,6 +777,38 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progress_bar.setValue(0)
         self.statusBar().addPermanentWidget(self.run_label)
         self.statusBar().addPermanentWidget(self.progress_bar)
+
+    def _start_wrap(self, tool_id: str) -> None:
+        try:
+            job = self.wrap_service.submit(tool_id)
+        except WorkstationError as exc:
+            self._warn("无法提交封装", str(exc))
+            return
+        self._notify(f"已提交后台封装：{tool_id}（{job['job_id']}）")
+        if self._wrap_timer is None:
+            self._wrap_timer = QtCore.QTimer(self)
+            self._wrap_timer.setInterval(1500)
+            self._wrap_timer.timeout.connect(self._poll_wrap_jobs)
+        self._wrap_timer.start()
+        self._poll_wrap_jobs()
+
+    def _poll_wrap_jobs(self) -> None:
+        jobs = self.wrap_service.jobs()
+        active = [job for job in jobs if job["status"] not in WRAP_TERMINAL]
+        if active:
+            job = active[0]
+            message = f"封装 {job['tool_id']}：{job['status']} {job['message']}"
+            self.statusBar().showMessage(message[:200])
+            return
+        if self._wrap_timer is not None:
+            self._wrap_timer.stop()
+        for job in jobs:
+            if job["status"] in WRAP_TERMINAL and job["job_id"] not in self._wrap_seen:
+                self._wrap_seen.add(job["job_id"])
+                self._notify(
+                    f"封装完成：{job['tool_id']} · {job['status']} · {job['message'][:120]}"
+                )
+                self.library.reload()
 
     def _register_node_commands(self, node_type: str) -> None:
         menu = self.graph.get_context_menu("nodes")

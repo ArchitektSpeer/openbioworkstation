@@ -44,7 +44,7 @@
 | G3 | 「运行此步」「运行至此节点」「全量运行」，节点边框实时反映状态 | ✅ 已实现并实测 |
 | G4 | 快速文件校验与前 5 条记录预览（FASTA/FASTQ/SAM/BAM/CRAM/VCF/BCF 等） | ✅ 14 种格式验证通过 |
 | G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次 50/50 已封装（46/46 合成数据冒烟通过并审核，4 个仅存活检查；11 个目录输出）；seqkit / fastp（smk + Conda）/ fastqc（目录）/ bcftools query（真实 VCF）/ samtools flagstat（真实 BAM）均已端到端验证；nf-core 86 个可生成 shell |
-| G6 | 通过 MCP 暴露 7 个高层工具 | ✅ 7 个工具经 stdio 客户端验证；⚠️ 未在 Claude Code/Desktop 中实测 |
+| G6 | 通过 MCP 暴露 9 个高层工具 | ✅ 9 个工具经 stdio 接口验证；⚠️ 未在 Claude Code/Desktop 中实测 |
 
 ### 1.2 非目标（v1 明确不做）
 
@@ -108,7 +108,7 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 | 环境隔离 | Conda / Apptainer | 透传 `--use-conda` / `--sdm conda apptainer` 与 `--conda-prefix` |
 | CWL 执行 | `cwltool` | 生成 job JSON，经 `glue/cwl_runner.py` 调用 |
 | 节点图编辑、序列化、菜单、属性面板 | NodeGraphQt | 节点类注册、端口格式拦截、菜单命令、状态着色 |
-| MCP 协议 | `mcp` 官方 SDK（FastMCP 1.x） | 7 个工具函数 |
+| MCP 协议 | `mcp` 官方 SDK（FastMCP 1.x） | 9 个工具函数 |
 
 ---
 
@@ -228,6 +228,7 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 - 目录类输出用 `directory: true` 标记：编译器生成 `directory(<path>)` 输出，下游可把它作为目录输入；文件预览对目录返回 `DIRECTORY` 与条目列表。
 - 额外依赖：清单可声明 `dependencies`（如 `python=3.11`），写入 `environment.yaml` 并在建环境时一并求解，用于上游包的 Python 兼容性。
 - 批量封装：`python -m glue.wrap_batch --manifest tool_packs/top50.yaml`，清单见 `tool_packs/top50.yaml`，可重复执行并复用已有环境。
+- 按需封装服务（`glue/wrap_service.py`）：对 `conda:<pkg>` 建环境，从 `conda-meta` 找出该包的可执行文件，抓取帮助，调用可配置的 OpenAI 兼容 LLM 生成定义，校验并落盘；随后用合成输入试运行，失败标记 `needs_review`。入口：工具库右键「按需封装/校验」、MCP `wrap_tool`/`get_wrap_job`、CLI `python -m glue.wrap_service --tool ...`。生成的工具默认 `reviewed=false`。
 - 运行期：Snakemake 子进程注入 `CONDA_DEFAULT_CHANNELS=""` 与隔离 `CONDARC`，避免 conda 26 默认渠道 ToS 阻塞环境创建；`conda_bin` 所在目录加入子进程 PATH。seqkit 已验证「画布 → Snakemake」端到端运行（2/2 步，输出正确）。
 
 ### 5.3 `glue/snakemake_bridge.py` 与运行监督
@@ -348,6 +349,8 @@ python -m snakemake -s <runs/ID/Snakefile> -d <workdir> --cores N
 | `compile_and_run_async` | `(mode="all", target_node=None, cores=4, dry_run=False)` | 返回 `run_id, snakefile_path, planned_jobs, planned_jobs_kind, warnings` |
 | `get_run_status` | `(run_id, log_tail=30)` | `RunStatus` 加日志末尾（≤100 行、≤8 KB） |
 | `inspect_output_file` | `(node_id_or_path, full_stats=False)` | 节点 id 时解析其输出；路径必须位于工作区内（解析符号链接）；最多 10 个文件 |
+| `wrap_tool` | `(tool_id)` | 提交按需封装/校验任务（`conda:<pkg>` 或 `auto:<pkg>/<cmd>`），返回 `job_id` 与状态 |
+| `get_wrap_job` | `(job_id)` | 返回封装任务状态、帮助文本与生成的定义 |
 
 所有会话写入走 `session_store.save_session(..., expected_revision, updated_by="mcp")`。**未实现**：v0.1 设想的 MCP sampling 路径（服务端直接请求客户端 LLM 生成工具定义），目前只有两段式调用。
 
@@ -534,8 +537,8 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 
 | 层级 | 现有内容 |
 | :--- | :--- |
-| 单元/集成（`tests/test_backend.py`，15 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、目录输出编译、目录预览、文件检查、自动封装定义校验、Top-50 清单定义校验、审核覆盖、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
-| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项） |
+| 单元/集成（`tests/test_backend.py`，17 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、目录输出编译、目录预览、文件检查、自动封装定义校验、Top-50 清单定义校验、审核覆盖、按需封装服务、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
+| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项）；`mcp_stdio_client` 覆盖 9 个工具 |
 | 端到端 | auto `seqkit`（合成 FASTQ）、`smk:bio/fastp`（wrapper + Conda）、auto `fastqc`（目录输出）、`bcftools query`（课题真实 VCF）、`samtools flagstat`（课题真实 BAM）均经编译与 Snakemake 真实运行通过；Top-50 首批 46/46 合成数据冒烟通过 |
 | 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、大规模索引性能 |
 
@@ -564,6 +567,7 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 | R7 | NodeGraphQt 与 PySide6 版本兼容 | 已锁定并验证 §12 的组合 |
 | R8 | 后端代码风格与契约文件不一致（缺类型注解、使用缩写别名） | 待统一 |
 | R9 | 上游包与 Python 版本不兼容（如 QUAST 5.3 需 Python 3.11） | 清单支持 `dependencies` 固定版本；封装后用冒烟发现并修正 |
+| R10 | LLM 自动生成的定义可能缺少必需参数或语义错误 | 合成输入试运行；失败标记 `needs_review`；生成的定义默认未审核 |
 | Q1 | 多样本通配符 | v2 |
 | Q2 | 内存资源暴露 | M3 |
 | Q3 | MCP 在 UI 未打开时运行 | 允许；状态持久化，UI 打开后可在运行历史中查看 |

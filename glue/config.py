@@ -38,6 +38,9 @@ def load_config(path: Path | None = None, *, workspace: Path | None = None) -> C
             "bioconda_channeldata_url",
             Config.__dataclass_fields__["bioconda_channeldata_url"].default,
         ),
+        llm_base_url=str(raw.get("llm_base_url") or os.environ.get("BIOWS_LLM_BASE_URL", "")),
+        llm_api_key=str(raw.get("llm_api_key") or os.environ.get("BIOWS_LLM_API_KEY", "")),
+        llm_model=str(raw.get("llm_model") or os.environ.get("BIOWS_LLM_MODEL", "")),
     )
     if config.cores < 1 or config.deploy not in ("conda", "apptainer"):
         raise WorkstationError("cores 必须为正整数，deploy 必须为 conda 或 apptainer")

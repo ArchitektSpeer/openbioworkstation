@@ -71,7 +71,7 @@ flowchart TD
 }
 ```
 
-提供检索、加节点、连线、异步运行、状态查询、输出预览及 Bioconda 自动封装共 7 个高层工具。自动封装默认未审核，须审核后才能默认执行。已通过 stdio 客户端验证，尚未在 Claude Desktop 等真实客户端中验证。
+提供检索、加节点、连线、异步运行、状态查询、输出预览、Bioconda 自动封装及按需封装任务共 9 个高层工具。自动封装默认未审核，须审核后才能默认执行。已通过 stdio 客户端验证，尚未在 Claude Desktop 等真实客户端中验证。
 
 ### 工具与配置
 
@@ -91,6 +91,9 @@ cores: 4
 deploy: conda
 conda_bin: /opt/miniconda3/bin/conda
 allow_unreviewed: false
+llm_base_url: https://api.deepseek.com
+llm_api_key: ""
+llm_model: deepseek-flash
 allowed_input_roots:
   - ~/biows/input
 ```
@@ -118,6 +121,24 @@ python validation/wrap_smoke.py --review-passed
 
 首批结果：50 个工具已封装，**46/46 合成数据冒烟通过并审核**（4 个仅存活检查：GATK、MACS3、SPAdes、Flye）；已端到端验证 `seqkit`（auto）、`fastp`（`smk:` wrapper + Conda）、`fastqc`（目录输出）、`bcftools query`（真实 VCF）与 `samtools flagstat`（真实 BAM）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
 
+### 按需封装任意索引工具
+
+工具库右键任意 `conda:` / `auto:` 条目 →「按需封装/校验（后台）」，或：
+
+```bash
+python -m glue.wrap_service --tool conda:fastp --wait
+```
+
+MCP 客户端可调用 `wrap_tool("conda:fastp")`，再用 `get_wrap_job(job_id)` 查询。
+
+流程：建环境 → 抓取 `--help` → LLM 生成定义（需配置 `llm_base_url` / `llm_model` / `llm_api_key`，或使用 `BIOWS_LLM_*` 环境变量）→ 校验 → 合成输入试运行 → 落盘。状态：
+
+- `wrapped`：定义已生成且试运行通过，但仍为未审核；
+- `needs_review`：定义已生成但试运行失败，需要人工修参数；
+- `needs_definition`：未配置 LLM 或生成失败，帮助文本已返回。
+
+未配置 LLM 时仍会创建环境并抓取帮助，供你或 Agent 补定义。
+
 ## 真实案例：WSMV 共感染分析
 
 WSMV 案例用 12 个 RNA-seq 文库跑通了从工具接线、真实运行到结果分析的完整流程。未检出 TriMV 共感染对 WSMV 宿主内多样性的显著影响：73 个受检位点中无位点达到 FDR < 0.10。样本量有限，阴性结果不证明等效。此案例证明流程可完成，不代表重大生物学发现或所有分析均由内置节点完成。
@@ -134,6 +155,7 @@ WSMV 案例用 12 个 RNA-seq 文库跑通了从工具接线、真实运行到�
 - Linux 单机，无多用户、远程协作或集群配置界面；无多样本通配符展开，使用多条节点链。
 - nf-core 转换保守，不能静态转换的模块不可运行；CWL 仅支持静态 File/File[] 端口与静态输出名，需另装 cwltool。
 - 格式标签不等于生物学语义校验；快速预览不等于全文件验证。没有已验证的性能或速度承诺。
+- 按需封装生成的定义默认未审核；合成输入试运行通过不代表真实数据/参数正确，使用前请检查 shell 与端口。
 
 ## 开发与物料重建
 

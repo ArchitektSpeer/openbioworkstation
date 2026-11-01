@@ -196,3 +196,6 @@ class Config:
     allowed_input_roots: tuple[Path, ...] = ()
     allow_unreviewed: bool = False
     bioconda_channeldata_url: str = "https://conda.anaconda.org/bioconda/channeldata.json"
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""

@@ -14,6 +14,7 @@ from glue.errors import (
     InvalidToolDefinitionError,
     PathNotAllowedError,
     SessionConflictError,
+    WorkstationError,
 )
 from glue.formats import formats_compatible, infer_formats
 from glue.models import ExecSpec, PortSpec, RunStatus, ToolSpec
@@ -308,6 +309,26 @@ def test_top50_manifest_definitions(tmp_path):
         assert spec.tool_id not in tool_ids
         tool_ids.add(spec.tool_id)
     assert len(tool_ids) == len(data["tools"])
+
+
+def test_package_binaries(tmp_path):
+    from glue.wrap_service import package_binaries
+
+    env = tmp_path / "env"
+    meta = env / "conda-meta"
+    meta.mkdir(parents=True)
+    (meta / "demo-1.0-0.json").write_text(
+        json.dumps({"files": ["bin/demo", "bin/python", "lib/demo.txt"]})
+    )
+    assert package_binaries(env, "demo") == ["demo"]
+
+
+def test_wrap_service_rejects_unsupported(tmp_path):
+    from glue.wrap_service import WrapService
+
+    service = WrapService(config(tmp_path))
+    with pytest.raises(WorkstationError):
+        service.submit("nf:fastp")
 
 
 def test_logs():
