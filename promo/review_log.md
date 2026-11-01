@@ -59,3 +59,8 @@ The original screenshot assets were preserved. Card annotations and the A3 poste
 - 九格各 1080×1080，总图 3240×3240；海报 3508×4961，300 dpi。PDF 仍为不可选取文字的图像版。 / Cards are 1080×1080, the sheet 3240×3240, and the poster 3508×4961 at 300 dpi. The PDF remains an image-based version.
 - 研究附件为原有 PDF 的逐字节副本，未重排或改写；`research/SHA256SUMS` 记录校验和。 / Research attachments are unchanged byte-for-byte copies, with checksums in `research/SHA256SUMS`.
 - Agent 教程配套脚本已通过实际 stdio、dry-run、真实执行及 2 条序列/8 bp 输出检查；本轮 pytest 为 17 passed，Ruff 检查通过。 / The tutorial script completed actual stdio calls, dry-run, execution and checks for two sequences/eight bases; pytest reported 17 passed and Ruff passed.
+
+
+## 2026-11-01 Agent 协作主题海报
+
+新增 `agent-poster.png`、`agent-poster.pdf` 及预览图。内容合并新版九宫格，强调研究者、Agent 与工作站的职责；数量沿用 `qzone/tool-counts.json` 的本机快照。真实截图来自 `assets/branch.png`，未修改界面内容。已使用 Poppler 渲染 PDF 并查看，未见标题、说明或适配流程文字重叠与截断。`pdfinfo` 确认为单页 A3；PNG 为 3508×4961、300 dpi。Ruff 检查通过；本次仅制作材料，未重新运行研究分析或工具验证。

@@ -1,5 +1,8 @@
 # 宣传物料 / Communication materials
 
+- `agent-poster.png` / `agent-poster.pdf`：新版 Agent 协作主题海报，A3、300 dpi；合并 QQ 空间九宫格中的协作分工、工具统计、LLM 适配和研究案例。`agent-poster.preview.png` 为预览版。
+  使用 `python promo/scripts/make_agent_poster.py` 重建；数量读取 `qzone/tool-counts.json` 的 2026-11-01 本机快照。
+
 - [QQ 空间新版九宫格](qzone/README.md)：九张独立图片，包含工具接入数量、可检索规模、LLM 自动适配及逐步推进的审核说明。
 
 - `academic-overview.png`：新版学术风格横版展示图，3600×2800 px，300 dpi；`academic-overview.preview.png` 为预览版。
