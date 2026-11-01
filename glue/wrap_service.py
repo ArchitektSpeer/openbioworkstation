@@ -158,17 +158,16 @@ def package_binaries(env, pkg_name):
                 continue
             names.add(binary)
     target = pkg_name.lower().replace("-", "").replace("_", "")
-    return sorted(
-        names,
-        key=lambda name: (
-            0
-            if name.lower().replace("-", "").replace("_", "") == target
-            else 1
-            if target in name.lower().replace("-", "").replace("_", "")
-            else 2,
-            name,
-        ),
-    )
+    helpers = ("graph", "plot", "example", "demo", "test", "helper", "util")
+
+    def rank(name):
+        lower = name.lower()
+        flat = lower.replace("-", "").replace("_", "")
+        score = 0 if flat == target else 1 if flat.startswith(target) else 2 if target in flat else 3
+        helper = any(word in lower for word in helpers)
+        return (score, helper, len(name), name)
+
+    return sorted(names, key=rank)
 
 
 @dataclass
