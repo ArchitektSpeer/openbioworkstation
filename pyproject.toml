@@ -1,7 +1,7 @@
 [project]
 name = "openbioworkstation"
 version = "0.1.0"
-description = "生物信息学可视化节点工作站：NodeGraphQt + Snakemake + MCP 的纯胶水层"
+description = "面向本地生物信息学分析的可视化工作流构建与执行平台"
 requires-python = ">=3.11"
 # 运行依赖以 requirements.txt 为准，此处只放工具链配置。
 
