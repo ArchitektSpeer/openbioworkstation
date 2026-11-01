@@ -172,6 +172,47 @@ def test_registry(registry):
     assert registry.get("smk:bio/bwa/index").outputs[0].formats == ("BWA_INDEX",)
 
 
+def test_directory_output(tmp_path, registry):
+    spec = ToolSpec(
+        "test:dir",
+        "dir",
+        "test",
+        "bioconda-auto",
+        "",
+        (),
+        (PortSpec("reads", ("FASTQ",)),),
+        (PortSpec("reports", ("ANY",), directory=True),),
+        (),
+        ExecSpec("shell", shell="mkdir -p {output.reports:q}"),
+    )
+    registry.build_index()
+
+    class Adapter:
+        def load_spec(self, tool_id):
+            return spec
+
+    registry._owners[spec.tool_id] = Adapter()
+    path = tmp_path / "reads.fastq"
+    path.write_text("@r\nACGT\n+\nIIII\n")
+    graph = {
+        "nodes": {
+            "i": s.node_entry(
+                s.FASTQ_INPUT,
+                "reads",
+                s.input_custom_defaults(s.INPUT_KINDS[0], "aaaaaaaa") | {"path_r1": str(path)},
+            ),
+            "t": s.node_entry(
+                s.tool_node_type(spec.tool_id), "dir", s.tool_custom_defaults(spec, "bbbbbbbb")
+            ),
+        },
+        "connections": [s.connection_entry("i", "reads", "t", "reads")],
+    }
+    result = compile_session(graph, registry, tmp_path)
+    assert "directory(" in result.snakefile_text
+    expected = str(tmp_path / "results" / "n_dir_bbbbbbbb" / "reports")
+    assert result.outputs["bbbbbbbb"]["reports"] == [expected]
+
+
 def test_compile_and_cycle(tmp_path, registry):
     graph = shell_graph(tmp_path, registry)
     result = compile_session(graph, registry, tmp_path)
@@ -190,6 +231,15 @@ def test_inspect(tmp_path):
     assert inspect_bio_file(str(file), full_stats=True).stats["records"] == 1
     assert not inspect_bio_file(str(tmp_path / "missing.fastq")).valid
     assert not list(tmp_path.glob("*.fxi"))
+
+
+def test_inspect_directory(tmp_path):
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    (reports / "a.html").write_text("x")
+    result = inspect_bio_file(str(reports))
+    assert result.valid and result.format == "DIRECTORY"
+    assert "a.html" in result.preview
 
 
 def test_definition_validation(tmp_path):

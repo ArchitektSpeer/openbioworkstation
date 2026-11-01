@@ -316,7 +316,7 @@ class BiocondaAutoWrapAdapter:
             raise InvalidToolDefinitionError("包名或命令名无效，不允许路径、空白或 shell 字符")
         return self.wrapped_dir / pkg_name / cli_cmd
 
-    def prepare(self, pkg_name, cli_cmd, binary=None):
+    def prepare(self, pkg_name, cli_cmd, binary=None, dependencies=()):
         self.location(pkg_name, cli_cmd)
         conda = self._conda()
         env = self.conda_prefix / f"biows-{pkg_name}"
@@ -334,6 +334,7 @@ class BiocondaAutoWrapAdapter:
                     "-c",
                     "bioconda",
                     pkg_name,
+                    *dependencies,
                 ],
                 capture_output=True,
                 text=True,
@@ -386,6 +387,7 @@ class BiocondaAutoWrapAdapter:
                         tuple(str(f).upper() for f in item["formats"]),
                         bool(item.get("multiple", False)),
                         bool(item.get("optional", False)),
+                        directory=bool(item.get("directory", False)),
                     )
                 )
             return tuple(result)
@@ -430,7 +432,7 @@ class BiocondaAutoWrapAdapter:
             reviewed=bool(bio.get("reviewed", False)),
         )
 
-    def store_definition(self, pkg_name, cli_cmd, meta_yaml, version):
+    def store_definition(self, pkg_name, cli_cmd, meta_yaml, version, dependencies=()):
         directory = self.location(pkg_name, cli_cmd)
         try:
             data = yaml.safe_load(meta_yaml)
@@ -444,7 +446,10 @@ class BiocondaAutoWrapAdapter:
         # Metadata is committed last, so an indexed definition always has its environment.
         (directory / "environment.yaml").write_text(
             yaml.safe_dump(
-                {"channels": ["conda-forge", "bioconda"], "dependencies": [f"{pkg_name}={version}"]}
+                {
+                    "channels": ["conda-forge", "bioconda"],
+                    "dependencies": [f"{pkg_name}={version}", *dependencies],
+                }
             )
         )
         (directory / "meta.yaml").write_text(yaml.safe_dump(data, allow_unicode=True))

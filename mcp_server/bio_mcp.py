@@ -77,6 +77,7 @@ def create_server(config, registry=None):
         cli_cmd: str,
         meta_yaml: str | None = None,
         binary: str | None = None,
+        dependencies: list[str] | None = None,
     ) -> dict:
         """Fetch CLI help, then submit a biows YAML definition in a second call. New tools require review."""
         adapter = next(
@@ -84,7 +85,10 @@ def create_server(config, registry=None):
         )
         if adapter is None:
             raise WorkstationError("未配置 Bioconda 适配器")
-        prepared = await asyncio.to_thread(adapter.prepare, pkg_name, cli_cmd, binary)
+        dependencies = dependencies or []
+        prepared = await asyncio.to_thread(
+            adapter.prepare, pkg_name, cli_cmd, binary, dependencies
+        )
         if meta_yaml is None:
             help_text = prepared["help_text"]
             return {
@@ -95,7 +99,12 @@ def create_server(config, registry=None):
                 "example": DEFINITION_EXAMPLE,
             }
         spec = await asyncio.to_thread(
-            adapter.store_definition, pkg_name, cli_cmd, meta_yaml, prepared["version"]
+            adapter.store_definition,
+            pkg_name,
+            cli_cmd,
+            meta_yaml,
+            prepared["version"],
+            dependencies,
         )
         await asyncio.to_thread(registry.build_index, True)
         return {

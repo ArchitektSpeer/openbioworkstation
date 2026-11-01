@@ -19,6 +19,14 @@ def inspect_bio_file(path: str, preview_n: int = 5, full_stats: bool = False) ->
         if not 0 <= preview_n <= 100:
             raise ValueError("preview_n 必须在 0 到 100 之间")
         file = Path(result.path)
+        if file.is_dir():
+            names = sorted(entry.name for entry in islice(file.iterdir(), 50))
+            result.format = "DIRECTORY"
+            result.valid = True
+            result.stats = {"sampled_entries": len(names)}
+            result.preview = names[:5]
+            result.elapsed_ms = round((perf_counter() - start) * 1000, 2)
+            return result
         if not file.is_file():
             raise ValueError("文件不存在或不是普通文件")
         if not file.stat().st_size:

@@ -2,7 +2,7 @@
 # 用法：python -m glue.wrap_batch --manifest tool_packs/top50.yaml --conda /opt/miniconda3/bin/conda
 # 已提供定义的条目会被真实封装到 data_dir/auto_wrapped/<pkg>/<cmd>/，默认 reviewed=false。
 # command 是工具 ID 中的命令名；binary 是实际执行的可执行文件（多子命令工具用）。
-# pending 条目需要目录端口、数据库、专用测试数据或多文件输出，逐个接入。
+# 目录类输出用 directory: true，编译为 Snakemake 的 directory() 输出。
 tools:
   - package: seqkit
     command: seqkit
@@ -481,17 +481,167 @@ tools:
           gff: {formats: [GFF]}
         shell: "barrnap --quiet --outseq {output.rrna:q} {input.genome:q} > {output.gff:q}"
 
-pending:
-  - {package: fastqc, command: fastqc, reason: 输出目录与报告命名需专用处理}
-  - {package: multiqc, command: multiqc, reason: 目录输入，端口模型需扩展}
-  - {package: bowtie2, command: bowtie2-build, reason: 索引为多文件目录输出}
-  - {package: hisat2, command: hisat2-build, reason: 索引为多文件目录输出}
-  - {package: star, command: STAR, reason: 索引目录且内存需求高}
-  - {package: salmon, command: salmon, reason: 索引/定量输出为目录与多文件}
-  - {package: gatk4, command: gatk, reason: 多子命令与参考字典依赖}
-  - {package: macs3, command: macs3, reason: callpeak 输出为前缀多文件}
-  - {package: mosdepth, command: mosdepth, reason: 输出为前缀多文件}
-  - {package: quast, command: quast, reason: 结果目录输出}
-  - {package: prokka, command: prokka, reason: 结果目录输出}
-  - {package: spades, command: spades.py, reason: 多输入/组装目录，资源需求高}
-  - {package: flye, command: flye, reason: 组装目录输出，资源需求高}
+  - package: fastqc
+    command: fastqc
+    definition:
+      name: fastqc
+      description: 测序质量报告（HTML + zip，目录输出）
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          reports: {formats: [ANY], directory: true}
+        shell: "mkdir -p {output.reports:q} && fastqc -q -t {threads} --outdir {output.reports:q} {input.reads:q}"
+
+  - package: multiqc
+    command: multiqc
+    definition:
+      name: multiqc
+      description: 汇总多个 QC 报告为单一 HTML
+      biows:
+        inputs:
+          reports: {formats: [ANY], multiple: true}
+        outputs:
+          html: {formats: [HTML]}
+        shell: "multiqc -f -o \"$(dirname {output.html:q})\" -n \"$(basename {output.html:q})\" {input.reports:q}"
+
+  - package: bowtie2
+    command: bowtie2-build
+    definition:
+      name: bowtie2-build
+      description: 构建 bowtie2 索引（目录输出）
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+        outputs:
+          index: {formats: [ANY], directory: true}
+        shell: "mkdir -p {output.index:q} && bowtie2-build {input.reference:q} {output.index:q}/index"
+
+  - package: hisat2
+    command: hisat2-build
+    definition:
+      name: hisat2-build
+      description: 构建 HISAT2 索引（目录输出）
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+        outputs:
+          index: {formats: [ANY], directory: true}
+        shell: "mkdir -p {output.index:q} && hisat2-build {input.reference:q} {output.index:q}/index"
+
+  - package: star
+    command: star-genome
+    binary: STAR
+    definition:
+      name: STAR genomeGenerate
+      description: 构建 STAR 基因组索引（目录输出）
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+        outputs:
+          index: {formats: [ANY], directory: true}
+        params: {sa_index_nbases: 11}
+        shell: "mkdir -p {output.index:q} && STAR --runMode genomeGenerate --runThreadN {threads} --genomeDir {output.index:q} --genomeFastaFiles {input.reference:q} --genomeSAindexNbases {params.sa_index_nbases}"
+
+  - package: salmon
+    command: salmon-index
+    binary: salmon
+    definition:
+      name: salmon index
+      description: 构建 salmon 转录组索引（目录输出）
+      biows:
+        inputs:
+          transcripts: {formats: [FASTA]}
+        outputs:
+          index: {formats: [ANY], directory: true}
+        shell: "salmon index -t {input.transcripts:q} -i {output.index:q} -p {threads}"
+
+  - package: gatk4
+    command: gatk-haplotypecaller
+    binary: gatk
+    definition:
+      name: GATK HaplotypeCaller
+      description: GATK 单样本变异检出
+      biows:
+        inputs:
+          reference: {formats: [FASTA]}
+          bam: {formats: [BAM]}
+        outputs:
+          vcf: {formats: [VCF]}
+        shell: "gatk --java-options '-Xmx4g' HaplotypeCaller -R {input.reference:q} -I {input.bam:q} -O {output.vcf:q}"
+
+  - package: macs3
+    command: macs3-callpeak
+    binary: macs3
+    definition:
+      name: MACS3 callpeak
+      description: ChIP-seq peak calling（目录输出）
+      biows:
+        inputs:
+          treatment: {formats: [BAM]}
+        outputs:
+          results: {formats: [ANY], directory: true}
+        params: {genome_size: hs}
+        shell: "mkdir -p {output.results:q} && cd {output.results:q} && macs3 callpeak -t {input.treatment:q} -f BAM -g {params.genome_size} -n macs"
+
+  - package: mosdepth
+    command: mosdepth
+    definition:
+      name: mosdepth
+      description: 快速深度统计（前缀多文件，目录输出）
+      biows:
+        inputs:
+          bam: {formats: [BAM]}
+        outputs:
+          reports: {formats: [ANY], directory: true}
+        shell: "mkdir -p {output.reports:q} && mosdepth --threads {threads} {output.reports:q}/sample {input.bam:q}"
+
+  - package: quast
+    command: quast
+    dependencies: ["python=3.11"]
+    definition:
+      name: QUAST
+      description: 基因组组装质量评估（目录输出）
+      biows:
+        inputs:
+          contigs: {formats: [FASTA]}
+        outputs:
+          reports: {formats: [ANY], directory: true}
+        shell: "quast -t {threads} -o {output.reports:q} {input.contigs:q}"
+
+  - package: prokka
+    command: prokka
+    definition:
+      name: Prokka
+      description: 原核基因组注释（目录输出）
+      biows:
+        inputs:
+          contigs: {formats: [FASTA]}
+        outputs:
+          results: {formats: [ANY], directory: true}
+        shell: "prokka --cpus {threads} --outdir {output.results:q} --prefix anno {input.contigs:q}"
+
+  - package: spades
+    command: spades
+    binary: spades.py
+    definition:
+      name: SPAdes
+      description: 单端 reads 基因组组装（目录输出）
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          results: {formats: [ANY], directory: true}
+        shell: "spades.py -t {threads} -s {input.reads:q} -o {output.results:q}"
+
+  - package: flye
+    command: flye
+    definition:
+      name: Flye
+      description: 长读段基因组组装（目录输出）
+      biows:
+        inputs:
+          reads: {formats: [FASTQ]}
+        outputs:
+          assembly: {formats: [ANY], directory: true}
+        shell: "flye --nano-raw {input.reads:q} --threads {threads} --out-dir {output.assembly:q}"

@@ -99,14 +99,14 @@ allowed_input_roots:
 
 ### 批量封装 Top-50 工具
 
-`tool_packs/top50.yaml` 收录 50 个常用工具：37 个已提供 `biows` 定义，13 个需要目录/数据库类端口，暂列 pending。执行：
+`tool_packs/top50.yaml` 收录 50 个常用工具，全部提供 `biows` 定义（其中 11 个为目录输出，用 `directory: true` 标记）。执行：
 
 ```bash
 python -m glue.wrap_batch --manifest tool_packs/top50.yaml \
   --conda /opt/miniconda3/bin/conda
 ```
 
-命令会为每个包创建独立 Conda 环境（固定 conda-forge + bioconda，不使用 defaults 渠道）、写入 `auto:` 定义并做一次存活检查。定义默认 `reviewed=false`，需在画布右键“标记为已审核”后才会被默认运行。多子命令工具（如 `samtools-faidx`）通过 `binary` 字段复用同一环境。
+命令会为每个包创建独立 Conda 环境（固定 conda-forge + bioconda，不使用 defaults 渠道）、写入 `auto:` 定义并做一次存活检查。定义默认 `reviewed=false`，需在画布右键“标记为已审核”后才会被默认运行。多子命令工具（如 `samtools-faidx`）通过 `binary` 字段复用同一环境；个别工具可加 `dependencies`（如 quast 固定 `python=3.11`）。
 
 合成数据冒烟（可选）：
 
@@ -116,7 +116,7 @@ python validation/wrap_smoke.py --review-passed
 
 脚本用合成的 FASTA/FASTQ/BED/VCF/GTF/BAM 逐个执行定义中的 shell，检查退出码与输出文件；`--review-passed` 会只把通过的条目标记为已审核。
 
-首批结果：37 个工具已封装，**37/37 合成数据冒烟通过并审核**；已端到端验证 `seqkit`（auto 工具）、`fastp`（`smk:` wrapper + Conda）与 `bcftools query`（真实 VCF 数据）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
+首批结果：50 个工具已封装，**43/43 合成数据冒烟通过并审核**（7 个仅存活检查：multiqc、STAR、GATK、MACS3、Prokka、SPAdes、Flye）；已端到端验证 `seqkit`（auto）、`fastp`（`smk:` wrapper + Conda）、`bcftools query`（真实 VCF）与 `fastqc`（目录输出）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
 
 ## 真实案例：WSMV 共感染分析
 

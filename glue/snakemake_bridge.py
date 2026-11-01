@@ -137,7 +137,11 @@ def compile_session(
         count = max(count, 1)
         for port in spec.outputs:
             prefix = workdir / "results" / rule / port.name
-            if spec.execution.kind == "cwl":
+            if port.directory:
+                path = str(prefix)
+                paths = [path]
+                expression = f"directory({path!r})"
+            elif spec.execution.kind == "cwl":
                 # cwltool output binding filenames are preserved inside this rule's outdir.
                 pattern = port.pattern
                 if not pattern or Path(pattern).is_absolute() or ".." in Path(pattern).parts:

@@ -112,6 +112,12 @@ RECIPES = {
     "auto:trnascan-se/tRNAscan-SE": {"files": {"genome": ("genome.fa", CONTIG)}},
     "auto:hmmer/hmmsearch": {"hmm": True, "files": {"sequences": ("prot.fa", PROTEINS)}},
     "auto:barrnap/barrnap": {"files": {"genome": ("genome.fa", CONTIG)}},
+    "auto:fastqc/fastqc": {"files": {"reads": ("reads.fq", FASTQ)}},
+    "auto:bowtie2/bowtie2-build": {"files": {"reference": ("ref.fa", FASTA)}},
+    "auto:hisat2/hisat2-build": {"files": {"reference": ("ref.fa", FASTA)}},
+    "auto:salmon/salmon-index": {"files": {"transcripts": ("tx.fa", FASTA)}},
+    "auto:mosdepth/mosdepth": {"bam": True},
+    "auto:quast/quast": {"files": {"contigs": ("contigs.fa", CONTIG)}},
 }
 
 
@@ -204,8 +210,11 @@ def run_tool(config, registry, tool_id, conda, timeout):
             )
             values["input.vcf_gz"] = str(gz)
         for port in spec.outputs:
-            extension = EXTENSIONS.get(port.formats[0], ".dat") if port.formats else ".dat"
-            values[f"output.{port.name}"] = str(work / f"{port.name}{extension}")
+            if port.directory:
+                values[f"output.{port.name}"] = str(work / port.name)
+            else:
+                extension = EXTENSIONS.get(port.formats[0], ".dat") if port.formats else ".dat"
+                values[f"output.{port.name}"] = str(work / f"{port.name}{extension}")
         for param in spec.params:
             values[f"params.{param.name}"] = str(param.default)
         values["threads"] = "1"
@@ -221,7 +230,16 @@ def run_tool(config, registry, tool_id, conda, timeout):
         outputs = {}
         for port in spec.outputs:
             path = Path(values[f"output.{port.name}"])
-            outputs[port.name] = {"exists": path.is_file(), "bytes": path.stat().st_size if path.is_file() else 0}
+            if port.directory:
+                outputs[port.name] = {
+                    "exists": path.is_dir(),
+                    "files": len(list(path.iterdir())) if path.is_dir() else 0,
+                }
+            else:
+                outputs[port.name] = {
+                    "exists": path.is_file(),
+                    "bytes": path.stat().st_size if path.is_file() else 0,
+                }
         return {
             "exit": process.returncode,
             "command": commandline,

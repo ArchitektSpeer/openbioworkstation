@@ -72,10 +72,11 @@ def main(argv=None):
     for entry in entries:
         package, command = entry["package"], entry["command"]
         binary = entry.get("binary")
+        dependencies = tuple(entry.get("dependencies", ()))
         started = time.monotonic()
         record = {"package": package, "command": command, "status": "failed"}
         try:
-            prepared = adapter.prepare(package, command, binary)
+            prepared = adapter.prepare(package, command, binary, dependencies)
             record.update(version=prepared["version"], environment=prepared["environment"])
             definition = entry.get("definition")
             if definition is None:
@@ -86,6 +87,7 @@ def main(argv=None):
                     command,
                     yaml.safe_dump(definition, allow_unicode=True),
                     prepared["version"],
+                    dependencies,
                 )
                 record.update(
                     tool_id=spec.tool_id,

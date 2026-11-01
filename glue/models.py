@@ -34,6 +34,7 @@ class PortSpec:
     optional: bool = False
     pattern: str = ""
     description: str = ""
+    directory: bool = False
 
 
 @dataclass(frozen=True, slots=True)
