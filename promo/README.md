@@ -1,5 +1,7 @@
 # 宣传物料 / Communication materials
 
+- [QQ 空间新版九宫格](qzone/README.md)：九张独立图片，包含工具接入数量、可检索规模、LLM 自动适配及逐步推进的审核说明。
+
 - `academic-overview.png`：新版学术风格横版展示图，3600×2800 px，300 dpi；`academic-overview.preview.png` 为预览版。
 - [版式说明与参考 / Layout notes and references](academic-overview.notes.md)。
 

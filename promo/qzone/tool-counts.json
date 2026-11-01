@@ -1,0 +1,385 @@
+{
+  "snapshot_date": "2026-11-01",
+  "scope": "Current local installation; node definitions, not independently validated software packages. Subcommands and adapter variants are counted separately.",
+  "indexed_entries": 15524,
+  "auto_wrapped_packages": 69,
+  "auto_wrapped_nodes": 78,
+  "builtin_wrapper_definitions": 5,
+  "local_nodes": 10,
+  "selected_node_definitions": 93,
+  "reviewed_flag_nodes": 62,
+  "nodes": [
+    {
+      "tool_id": "local:fastp",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:bwa/index",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:bwa/mem",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:samtools/view",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:samtools/sort",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:samtools/index",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:bcftools/stats",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:seqkit/stats",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:bam_dedup",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "local:viral_variant_stats",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "smk:bio/fastp",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "smk:bio/bwa/index",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "smk:bio/bwa/mem",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "smk:bio/samtools/sort",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "smk:bio/samtools/index",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:abricate/abricate",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:aragorn/aragorn",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:barrnap/barrnap",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bcftools/bcftools",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bcftools/bcftools-query",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bcftools/bcftools-view",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bedops/bedops",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:bedtools/bedtools-genomecov",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bedtools/bedtools-intersect",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bedtools/bedtools-merge",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bedtools/bedtools-sort",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:blast/blastn",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bowtie2/bowtie2-build",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:bwa/bwa",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:bwa-mem2/bwa-mem2",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:checkv/checkv",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:clustalo/clustalo",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:csvtk/csvtk",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:cutadapt/cutadapt",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:datamash/decorate",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:diamond/diamond",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:emboss/water",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:fastp/fastp",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:fastqc/fastqc",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:fasttree/FastTree",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:flye/flye",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:freebayes/freebayes",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:gatk4/gatk-haplotypecaller",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:genomad/genomad",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:gffread/gffread",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:hisat2/hisat2-build",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:hmmer/hmmsearch",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:htslib/bgzip",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:htslib/tabix",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:infernal/cmemit",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:kallisto/kallisto-index",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:kmer-jellyfish/jellyfish-count",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:lastz/lastz",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:macs2/macs2",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:macs3/macs3-callpeak",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:mafft/mafft",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:minimap2/minimap2",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:mlst/mlst",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:mosdepth/mosdepth",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:mrbayes/mb",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:multiqc/multiqc",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:mummer/mummer",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:ngmlr/ngmlr",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:picard/picard-markduplicates",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:plink/plink",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:plink2/plink2",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:preseq/preseq",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:prinseq/prinseq-lite.pl",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:prodigal/prodigal",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:prokka/prokka",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:quast/quast",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:salmon/salmon-index",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:sambamba/sambamba",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:samtools/samtools-depth",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:samtools/samtools-faidx",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:samtools/samtools-flagstat",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:seqkit/seqkit",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:seqtk/seqtk",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:seqtk/seqtk-sample",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:serotypefinder/serotypefinder",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:snpeff/snpEff",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:sourmash/sourmash-sketch",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:spades/spades",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:spatyper/spaTyper",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:star/star-genome",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:subread/featureCounts",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:trimmomatic/trimmomatic",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:trnascan-se/tRNAscan-SE",
+      "reviewed_flag": true
+    },
+    {
+      "tool_id": "auto:varscan/varscan",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:vcftools/vcftools",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:viennarna/b2ct",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:vt/vt",
+      "reviewed_flag": false
+    },
+    {
+      "tool_id": "auto:winnowmap/winnowmap",
+      "reviewed_flag": false
+    }
+  ]
+}
