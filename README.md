@@ -1,25 +1,28 @@
 # OpenBioWorkstation
 
-**简体中文** | [English](README.en.md)
+**English** | [简体中文](README.zh-CN.md)
 
-**面向本地生物信息学分析的可视化工作流构建与执行平台**
+**A visual bioinformatics workstation for researcher–agent collaboration**
 
-OpenBioWorkstation 是面向 Linux 单机环境的生物信息学工作流软件，集成基于 NodeGraphQt 的图形编辑界面、基于 Snakemake 的工作流执行机制，以及基于模型上下文协议（Model Context Protocol，MCP）的程序化访问接口。系统以共享工作区为基础，将分析流程的图结构、工具定义、执行状态与运行记录关联存储，为交互式流程构建和智能体辅助操作提供统一接口。
+OpenBioWorkstation is a Linux desktop application for constructing, executing and inspecting bioinformatics workflows. It combines a visual node editor with Snakemake execution and a Model Context Protocol (MCP) interface. Researchers and agents work with the same local workflow, while analysis steps, execution logs and output files remain available for inspection.
 
-本项目采用现有开源组件实现图形交互、任务调度与生物数据解析，项目自身主要承担工具元数据适配、工作流编译和运行状态协调。其目标是支持分析过程的可检查性与可追溯性；跨环境结果复现仍取决于输入数据、工具版本、参数及依赖环境的完整记录。
+The researcher defines the scientific question, selects methods and reviews results. An agent can assist with tool discovery, workflow construction, task execution and output inspection. This division of responsibilities supports agent-assisted computational analysis while retaining researcher oversight of methodological and biological interpretation.
 
-- **工作流构建**：通过节点与连线表达分析步骤及数据依赖，并检查输入、输出端口的格式兼容性。
-- **工作流执行**：将节点图编译为 Snakemake 工作流，支持全流程执行、执行至指定节点、单节点重新执行及缓存跳过。
-- **过程检查与记录**：以节点状态显示执行进度，提供文件校验、有限记录预览及运行历史。
-- **程序化访问**：通过 MCP 支持智能体构建和执行工作流；图形界面与 MCP 接口访问同一工作区。
+![Example bioinformatics workflow in OpenBioWorkstation](promo/assets/branch.png)
 
-![OpenBioWorkstation 工作流编辑、接口结构与应用案例](promo/academic-overview.png)
+*An excerpt from the WSMV application workflow. The example includes case-specific nodes.*
 
-[界面展示海报](promo/poster.png) · [A3 PDF](promo/poster.pdf) · [展示材料与声明依据](promo/copy.md)
+## Main capabilities
 
-## 安装与快速开始
+- Construct workflows by connecting input, tool and output nodes, with checks for file-format compatibility.
+- Execute a complete workflow, run up to a selected node or repeat a single step; reuse existing outputs where applicable.
+- Inspect input and output files, follow node execution states and review previous runs.
+- Use MCP to let an agent operate on the same workspace as the desktop interface.
+- Generate additional tool definitions from command-line help using an LLM, followed by checks, trial execution and review.
 
-需要 Linux、Python 3.11+ 和可用的桌面环境。`uv` 用于下面的安装示例。实际生信工具及 Conda/Mamba 按运行模式另行安装；纯 shell 流程不要求 Conda。
+## Installation
+
+OpenBioWorkstation requires Linux, Python 3.11 or later and a graphical desktop session. The example below uses `uv`. Bioinformatics executables are installed separately when required.
 
 ```bash
 git clone https://github.com/ArchitektSpeer/openbioworkstation.git
@@ -29,67 +32,29 @@ uv pip install --python .venv/bin/python -r requirements.txt
 ./run-demo.sh
 ```
 
-离线演示使用合成 FASTQ / FASTA，执行文件检查和 HTML / JSON 报告生成；演示流程本身不需网络或 Conda，但首次安装 Python 依赖需要可用的软件源。它不执行测序质控、比对或变异分析。操作详见 [演示说明](examples/README.md)。
+The demonstration inspects synthetic FASTQ and FASTA files and produces HTML and JSON reports. After Python dependencies have been installed, it runs without network access or Conda. It demonstrates file inspection and workflow execution rather than read filtering, alignment or variant analysis. See the [demo guide](examples/README.en.md) for instructions.
 
-打开普通工作区：
+## Working with the desktop application
 
-```bash
-.venv/bin/python -m ui.workstation_window --workspace ~/biows/projects/demo
-```
-
-## 与 Agent 协作开展生物信息学分析
-
-研究者负责研究问题、实验设计、参数选择与结果解释；Agent 通过 MCP 检索工具、构建节点图、发起运行并整理执行证据。这里的“实验”指计算分析，不涉及湿实验设备控制。
-
-- [中文教程：配置、调用示例与真实样本分析](docs/agent-workflow.zh-CN.md)
-- [English tutorial: setup, tool calls and real-data analysis](docs/agent-workflow.en.md)
-- [中英双语宣传文案与素材](promo/README.md)
-
-建议先完成教程中的合成 FASTQ → SeqKit 统计练习，再迁移到真实数据。教程中的工具调用已按当前 MCP 接口编写；具体 Agent 客户端的兼容性需单独验证。
-
-## 系统架构与实现
-
-```mermaid
-flowchart TD
-    UI[NodeGraphQt 桌面画布] --> GLUE[共享 Python 集成层]
-    MCP[MCP stdio / Agent] --> GLUE
-    UI <--> WS[本地会话与 revision]
-    MCP <--> WS
-    GLUE --> CHECK[pyfastx / pysam / cyvcf2]
-    GLUE --> SF[Snakefile]
-    SF --> RUN[独立运行监督进程]
-    RUN --> SMK[Snakemake]
-    SMK --> TOOLS[本机工具 / wrapper / 环境部署]
-    RUN --> HISTORY[状态、日志与运行快照]
-```
-
-图结构检查用于拒绝格式不兼容的连线、重复输入和有向环。文件检查分发给成熟解析库；快速预览只读取有限记录，不能证明全文件完整。图结构保存为 JSON，UI 与 MCP 使用 revision 乐观锁避免静默覆盖。每次运行保留 Snakefile、会话、命令与状态；独立监督进程可在 UI / MCP 退出后继续记录运行。
-
-### MCP 接入
+Open a separate workspace for your own analysis:
 
 ```bash
-.venv/bin/python -m mcp_server.bio_mcp --workspace ~/biows/projects/demo
+.venv/bin/python -m ui.workstation_window --workspace ~/biows/projects/my-analysis
 ```
 
-客户端配置模板（将 `/path/to` 换成实际绝对路径）：
+1. Add input nodes and select the corresponding data files. Inspect the file previews before constructing the workflow.
+2. Search the tool library, add the required nodes and connect compatible input and output ports.
+3. Review tool parameters and run a dry run before starting the analysis.
+4. Execute the workflow and inspect node states and logs. For subsequent changes, run up to a selected node or repeat a step whose upstream results are already available.
+5. Inspect the output files and save the workspace. Results are stored in `results/`; run records are stored in `runs/`.
 
-```json
-{
-  "mcpServers": {
-    "openbioworkstation": {
-      "command": "/path/to/openbioworkstation/.venv/bin/python",
-      "args": ["-m", "mcp_server.bio_mcp", "--workspace", "/path/to/workspace"],
-      "env": {"PYTHONPATH": "/path/to/openbioworkstation"}
-    }
-  }
-}
-```
+The current interface uses Chinese menu labels. Full execution is available as **全量运行**; output inspection is available as **预览输出文件**. Use **Ctrl+S** to save the session. Open demonstration workspaces through `./run-demo.sh`, which registers their additional example tools.
 
-MCP 服务提供 9 个高层工具，覆盖工具检索、节点添加、端口连接、异步执行、状态查询、输出预览、Bioconda 自动封装及按需封装任务管理。自动封装默认未审核，须审核后才能默认执行。已通过 stdio 客户端验证，尚未在 Claude Desktop 等真实客户端中验证。
+## Available tools
 
-### 工具与配置
+Tool availability depends on installed executables, downloaded metadata and locally prepared definitions. The application provides five built-in wrapper definitions for fastp, BWA index/mem and SAMtools sort/index. Local nodes additionally cover SAM/BAM conversion, filtering and deduplication, variant statistics and sequence statistics.
 
-当前提供 5 个内置 wrapper 定义（fastp、BWA index/mem、SAMtools sort/index），以及基础本机工具节点（fastp、BWA index/mem、SAMtools view/sort/index、BCFtools stats、SeqKit stats）；当前代码还定义了 SAMtools 过滤去重和基于 pysam 的病毒位点统计节点。此外可用 `python -m glue.fetch_catalog --all` 下载上游元数据，建立来自 snakemake-wrappers、nf-core/modules 与 Bioconda 的工具索引。现有记录包含 15,447 条索引条目；该数值反映特定元数据快照的规模，不等同于已验证可执行工具的数量（见“当前限制”）。依赖外部工具的本机节点仅在相应包和可执行文件存在时出现；病毒位点统计节点基于 Python/pysam。可用以下命令建立本机环境：
+Install the commonly used executables with Conda:
 
 ```bash
 conda create -y --solver libmamba --override-channels \
@@ -97,109 +62,86 @@ conda create -y --solver libmamba --override-channels \
   -p ~/.cache/biows/common-tools fastp bwa samtools bcftools seqkit
 ```
 
-`BIOWS_COMMON_ENV` 可指定另一套已安装环境。默认配置在 `~/.config/biows/config.yaml`，支持 `--config FILE`：
+Set `BIOWS_COMMON_ENV` if these packages are installed in a different Conda environment. Local executable-based nodes require both package metadata and the corresponding binaries in that environment.
+
+The repository also includes a [tool pack](tool_packs/top50.yaml) containing 50 node definitions for 42 software packages. These definitions do not install their dependencies automatically when the repository is cloned.
+
+A local installation snapshot dated **1 November 2026** contained 69 software packages with 78 adapted nodes. Together with five built-in definitions and ten local nodes, this represented 93 node definitions, of which 62 carried a review flag. The catalog contained 15,524 searchable entries. These figures describe that installation, rather than the default contents of a new installation. Software packages, node definitions and catalog entries are distinct counts; review coverage is being expanded.
+
+Download upstream catalog metadata when broader tool discovery is needed:
+
+```bash
+.venv/bin/python -m glue.fetch_catalog --all
+```
+
+Catalog entries describe tools from Snakemake Wrappers, nf-core and Bioconda. Searchability does not imply that a tool is directly executable or has been validated for a particular analysis.
+
+## Agent-assisted analysis
+
+Connect an MCP-capable agent client to the workspace used by the desktop application. The following is a generic stdio configuration; replace all paths with absolute paths and adapt the configuration to the chosen client.
+
+```json
+{
+  "mcpServers": {
+    "openbioworkstation": {
+      "command": "/absolute/path/openbioworkstation/.venv/bin/python",
+      "args": ["-m", "mcp_server.bio_mcp", "--workspace", "/absolute/path/biows/projects/my-analysis"],
+      "env": {"PYTHONPATH": "/absolute/path/openbioworkstation"}
+    }
+  }
+}
+```
+
+The MCP interface supports tool discovery, node creation, port connections, asynchronous execution, status queries, file inspection and tool-adaptation jobs. Save desktop changes before agent edits, and reload the workspace when prompted after external changes.
+
+A suitable initial request is:
+
+> Inspect the input files, identify the required tools and construct the workflow. Perform a dry run before execution. Report the run ID, output paths and any errors, and distinguish completed operations from proposed analysis steps.
+
+The [agent tutorial](docs/agent-workflow.en.md) provides a complete synthetic FASTQ-to-SeqKit exercise, exact tool-call examples and guidance for real-data analysis. The MCP stdio interface has been exercised; compatibility with each end-user agent client should be checked separately.
+
+## LLM-assisted tool adaptation
+
+For an indexed tool without a suitable definition, select the on-demand wrapping action in the tool-library context menu, or run:
+
+```bash
+.venv/bin/python -m glue.wrap_service --tool conda:fastp --wait
+```
+
+The application prepares an environment, extracts command-line help and can ask an LLM to generate input, output, parameter and execution definitions. It then checks the definition and attempts execution with synthetic inputs. Configure `llm_base_url`, `llm_model` and `llm_api_key`, or use `BIOWS_LLM_BASE_URL`, `BIOWS_LLM_MODEL` and `BIOWS_LLM_API_KEY`. The model endpoint must support the chat-completions request format used by the application.
+
+Generated definitions remain unreviewed by default. Inspect commands, ports, parameters and trial results before marking a definition reviewed. A successful synthetic trial does not establish correctness for real samples. Without an LLM configuration, environment preparation and help extraction remain available, but the definition must be supplied separately.
+
+## Configuration and data access
+
+The default configuration file is `~/.config/biows/config.yaml`. A minimal example is:
 
 ```yaml
-workspace: ~/biows/projects/demo
+workspace: ~/biows/projects/my-analysis
 cores: 4
 deploy: conda
-conda_bin: /opt/miniconda3/bin/conda
+conda_bin: conda
 allow_unreviewed: false
-llm_base_url: https://api.deepseek.com
-llm_api_key: ""
-llm_model: deepseek-flash
 allowed_input_roots:
   - ~/biows/input
 ```
 
-输入必须位于工作区或许可根目录内，MCP 输出预览限于工作区。上游目录与环境选项见 [设计文档](DESIGN.md)。
+The desktop application and MCP server accept `--config FILE` to select another configuration. Inputs must be within the workspace or an allowed input directory. MCP file inspection is restricted to the workspace.
 
-### 基于预定义清单的工具批量封装
+Analysis execution and file storage are local. Dependency downloads and model requests can require network access. An external agent may transmit prompts and tool results according to its client's settings; select those settings to suit the data being analyzed.
 
-`tool_packs/top50.yaml` 收录 50 个常用工具，全部提供 `biows` 定义（其中 11 个为目录输出，用 `directory: true` 标记）。执行：
+## Application examples
 
-```bash
-python -m glue.wrap_batch --manifest tool_packs/top50.yaml \
-  --conda /opt/miniconda3/bin/conda
-```
+The [research examples](promo/research/README.md) include a WSMV/TriMV coinfection analysis, a software walkthrough and an exploratory wheat chloroplast RNA-editing report.
 
-命令会为每个包创建独立 Conda 环境（固定 conda-forge + bioconda，不使用 defaults 渠道）、写入 `auto:` 定义并执行一次可执行程序可用性检查。定义默认 `reviewed=false`，需在画布右键“标记为已审核”后才会被默认运行。多子命令工具（如 `samtools-faidx`）通过 `binary` 字段复用同一环境；个别工具可加 `dependencies`（如 quast 固定 `python=3.11`）。
+The WSMV example used 12 RNA-seq libraries. None of 73 tested sites reached FDR < 0.10 in the reported analysis of coinfection and within-host WSMV diversity. This result does not establish absence of an effect or statistical equivalence. The examples include case-specific analysis steps, and the accompanying reports are not presented as peer-reviewed publications. Complete raw data and analysis workspaces are not included in this repository.
 
-合成数据冒烟测试（可选）：
+## Scope and limitations
 
-```bash
-python validation/wrap_smoke.py --review-passed
-```
+OpenBioWorkstation currently supports Linux single-machine analysis. It does not provide a multi-user service, remote collaboration or a cluster configuration interface. Multiple samples are represented by separate node chains; sample wildcard expansion is not implemented.
 
-脚本用合成的 FASTA/FASTQ/BED/VCF/GTF/BAM 逐个执行定义中的 shell，检查退出码与输出文件；`--review-passed` 会只把通过的条目标记为已审核。
+File-format checks identify compatible data types, while bounded previews inspect only a subset of records. Neither substitutes for complete file validation or assessment of biological suitability. Upstream tool adapters support a subset of the indexed ecosystem; verify definitions, dependencies and parameters for the intended analysis.
 
-现有验证记录显示，50 个工具已完成封装，其中 46 个完成合成数据冒烟测试并通过审核，另 4 个（GATK、MACS3、SPAdes、Flye）仅完成可执行程序可用性检查。端到端验证覆盖 `seqkit`（auto）、`fastp`（`smk:` wrapper + Conda）、`fastqc`（目录输出）、`bcftools query`（真实 VCF）与 `samtools flagstat`（真实 BAM）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
+## License
 
-### 索引工具的按需封装
-
-工具库右键任意 `conda:` / `auto:` 条目 →「按需封装/校验（后台）」，或：
-
-```bash
-python -m glue.wrap_service --tool conda:fastp --wait
-```
-
-MCP 客户端可调用 `wrap_tool("conda:fastp")`，再用 `get_wrap_job(job_id)` 查询。
-
-流程：建环境 → 抓取 `--help` → LLM 生成定义（需配置 `llm_base_url` / `llm_model` / `llm_api_key`，或使用 `BIOWS_LLM_*` 环境变量）→ 校验 → 合成输入试运行 → 落盘。状态：
-
-- `wrapped`：定义已生成且试运行通过，但仍为未审核；
-- `needs_review`：定义已生成但试运行失败，需要人工检查并修订参数；
-- `needs_definition`：未配置 LLM 或生成失败，帮助文本已返回。
-
-未配置 LLM 时，系统仍可创建环境并提取帮助文本，供研究人员或智能体补充工具定义。
-
-### 预热常用工具
-
-```bash
-python validation/prewarm_tools.py --conda /opt/miniconda3/bin/conda
-```
-
-读取 `tool_packs/prewarm.txt`（191 个常用包），对已索引但未封装的包批量执行按需封装；自动跳过已封装/不存在的包，剩余磁盘低于 25GB 时停止，结果写入 `validation/prewarm-result.json`。
-
-## 应用案例：WSMV 共感染分析
-
-该案例使用 12 个 RNA-seq 文库，展示工具连接、工作流执行及结果分析的应用过程。现有案例摘要报告：在对 TriMV 共感染与 WSMV 宿主内多样性之间关系的分析中，73 个受检位点均未达到 FDR < 0.10 的显著性阈值。该结果仅表示在所采用的样本、分析方法及统计阈值下未检出显著关联，不能据此推断不存在效应或不同条件之间具有统计等效性。
-
-此案例用于说明软件在具体分析任务中的应用过程，不构成通用生物学有效性验证；部分分析步骤使用案例专用节点。
-
-![WSMV 应用案例的结果摘要](promo/assets/wsmv_result.png)
-
-公开仓库包含软件、文档、展示图像及经授权发布的[研究展示附件](promo/research/README.md)，包括案例稿件、研究介绍、软件展示流程和另一项小麦叶绿体 RNA 编辑探索性报告。附件为既有成品，不作为已发表或经同行评审的成果宣传。完整原始数据、分析脚本、参考文件与运行工作区未发布，因此本仓库仍不构成完整研究复现归档。历史截图中的案例专用节点不能直接视为默认已验证工具；当前可用节点见上文。
-
-## 当前限制
-
-- 既有验证记录中的索引规模为：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。可直接执行的限于 5 个内置 wrapper、当前注册表中满足依赖条件的本机节点，以及本机按需封装的 Bioconda 工具；Top-50 清单 50 个工具已提供定义（46 个通过合成数据冒烟并审核，11 个目录输出）。nf-core 仅 86 个模块可自动生成 shell；其他 Bioconda 条目需按需封装并审核。
-- `smk:` wrapper + Conda 链路已用 fastp 实测跑通（首次需联网下载 wrapper 与环境）；上游 418 个 wrapper 未逐个验证。
-- MCP 已验证 stdio 接口，尚未在真实 Agent 客户端（如 Claude Desktop）中实测。
-- Linux 单机，无多用户、远程协作或集群配置界面；无多样本通配符展开，使用多条节点链。
-- nf-core 转换保守，不能静态转换的模块不可运行；CWL 仅支持静态 File/File[] 端口与静态输出名，需另装 cwltool。
-- 格式标签不等于生物学语义校验；快速预览不等于全文件验证。没有已验证的性能或速度承诺。
-- 按需封装生成的定义默认未审核；合成输入试运行通过不代表真实数据/参数正确，使用前请检查 shell 与端口。
-
-## 开发、验证与展示材料
-
-设计、完成度与验证边界以 [DESIGN.md](DESIGN.md) 为准。测试：
-
-```bash
-uv pip install --python .venv/bin/python -r requirements-dev.txt
-.venv/bin/python -m pytest -q
-.venv/bin/ruff check glue ui mcp_server examples tests
-```
-
-展示图由软件离屏渲染截图及案例结果图构成，未使用 AI 生成的软件界面。安装 Pillow 与 Noto Sans CJK SC 后可重建：
-
-```bash
-python promo/scripts/make_grid.py
-python promo/scripts/make_poster.py
-```
-
-素材来源、裁切与声明依据见 [物料说明](promo/README.md)，视觉复核见 [review_log.md](promo/review_log.md)。
-
-## 许可证
-
-[MIT](LICENSE)，版权人 OpenBioWorkstation contributors。依赖组件和实际调用工具遵循各自的许可证。
+OpenBioWorkstation is distributed under the [MIT License](LICENSE). Dependencies and invoked bioinformatics tools retain their respective licenses.

@@ -1,6 +1,6 @@
 # Agent-assisted bioinformatics analysis
 
-[简体中文](agent-workflow.zh-CN.md) | **English** · [Project overview](../README.en.md)
+[简体中文](agent-workflow.zh-CN.md) | **English** · [Project overview](../README.md)
 
 This tutorial uses MCP to connect an agent to a computational bioinformatics workflow. The researcher defines the question, study design and interpretation; the agent converts operational steps into inspectable tool calls and run records. “Experiment” here means computational analysis, not wet-lab equipment control.
 
@@ -17,7 +17,7 @@ Generated prose is not evidence of execution. Reports should identify actual run
 
 ## 2. Installation and a separate workspace
 
-Install Python dependencies using the [project instructions](../README.en.md). The exercise requires only SeqKit. Skip this installation if your existing common-tools environment already contains it:
+Install Python dependencies using the [project instructions](../README.md). The exercise requires only SeqKit. Skip this installation if your existing common-tools environment already contains it:
 
 ```bash
 conda create -y --solver libmamba --override-channels \

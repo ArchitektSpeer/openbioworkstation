@@ -1,6 +1,6 @@
 # 与 Agent 协作开展生物信息学分析
 
-**简体中文** | [English](agent-workflow.en.md) · [返回首页](../README.md)
+**简体中文** | [English](agent-workflow.en.md) · [返回首页](../README.zh-CN.md)
 
 本教程介绍通过 MCP 与 Agent 协作完成计算分析的方法。研究者提出问题、确定实验设计和解释结论；Agent 将操作落实为可检查的工具调用、工作流与运行记录。这里的“实验”指计算实验，不涉及湿实验设备控制。
 
@@ -17,7 +17,7 @@ Agent 生成的文字不是执行证据。报告应引用实际 `run_id`、日�
 
 ## 2. 安装和创建独立工作区
 
-先按 [首页](../README.md) 安装 Python 依赖。以下练习只需 SeqKit，可建立最小工具环境；已有 common-tools 环境包含 SeqKit 时跳过安装：
+先按 [首页](../README.zh-CN.md) 安装 Python 依赖。以下练习只需 SeqKit，可建立最小工具环境；已有 common-tools 环境包含 SeqKit 时跳过安装：
 
 ```bash
 conda create -y --solver libmamba --override-channels \

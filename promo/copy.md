@@ -62,7 +62,7 @@ Limitations include no multi-user service or sample wildcard expansion, and tool
 
 ## 声明依据 / Claim basis
 
-- 系统结构与功能 / Architecture and behavior: [README 中文](../README.md), [English](../README.en.md), [设计文档 / Design](../DESIGN.md).
+- 系统结构与功能 / Architecture and behavior: [README 中文](../README.zh-CN.md), [English](../README.md), [设计文档 / Design](../DESIGN.md).
 - 当前 MCP 工具与参数 / Current MCP signatures: [服务实现 / Server](../mcp_server/bio_mcp.py).
 - 合成练习及本机验证范围 / Synthetic exercise and verification scope: [教程 / Tutorial](../docs/agent-workflow.en.md), [脚本 / Script](../examples/agent_seqkit.py).
 - 图像来源与既有视觉复核限制 / Image provenance and historical review limits: [素材目录 / Assets](README.md), [复核记录 / Review](review_log.md).
