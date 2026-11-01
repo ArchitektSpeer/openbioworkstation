@@ -1,5 +1,8 @@
 # 宣传物料 / Communication materials
 
+- `academic-overview.png`：新版学术风格横版展示图，3600×2800 px，300 dpi；`academic-overview.preview.png` 为预览版。
+- [版式说明与参考 / Layout notes and references](academic-overview.notes.md)。
+
 - `grid/grid.png`：3240×3240 总图；`grid/01.png` 至 `09.png`：1080×1080 单图。
 - `poster.png` / `poster.pdf`：A3，3508×4961 px，300 dpi（像素取整带来不足 0.04 mm 的纸张误差）。PDF 为高分辨率单页图像，文字非可选文本。
 - `copy.md`：中英双语定位、简介、社交文案、演示顺序、FAQ 与能力依据。

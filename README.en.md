@@ -13,7 +13,7 @@ The project reuses established components for graph interaction, scheduling and 
 - **Inspection:** display node states, inspect files, preview bounded records and review run history.
 - **Programmatic access:** agents construct and execute workflows through MCP, using the same workspace as the graphical interface.
 
-![Application interface and case-study overview](promo/grid/grid.png)
+![Workflow editor, execution interfaces and application case](promo/academic-overview.png)
 
 [Bilingual poster](promo/poster.png) · [A3 PDF](promo/poster.pdf) · [Communication materials](promo/README.md)
 

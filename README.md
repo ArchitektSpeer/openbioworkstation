@@ -13,7 +13,7 @@ OpenBioWorkstation 是面向 Linux 单机环境的生物信息学工作流软件
 - **过程检查与记录**：以节点状态显示执行进度，提供文件校验、有限记录预览及运行历史。
 - **程序化访问**：通过 MCP 支持智能体构建和执行工作流；图形界面与 MCP 接口访问同一工作区。
 
-![OpenBioWorkstation 图形界面与应用案例概览](promo/grid/grid.png)
+![OpenBioWorkstation 工作流编辑、接口结构与应用案例](promo/academic-overview.png)
 
 [界面展示海报](promo/poster.png) · [A3 PDF](promo/poster.pdf) · [展示材料与声明依据](promo/copy.md)
 
