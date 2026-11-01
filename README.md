@@ -116,7 +116,7 @@ python validation/wrap_smoke.py --review-passed
 
 脚本用合成的 FASTA/FASTQ/BED/VCF/GTF/BAM 逐个执行定义中的 shell，检查退出码与输出文件；`--review-passed` 会只把通过的条目标记为已审核。
 
-首批结果：50 个工具已封装，**43/43 合成数据冒烟通过并审核**（7 个仅存活检查：multiqc、STAR、GATK、MACS3、Prokka、SPAdes、Flye）；已端到端验证 `seqkit`（auto）、`fastp`（`smk:` wrapper + Conda）、`bcftools query`（真实 VCF）与 `fastqc`（目录输出）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
+首批结果：50 个工具已封装，**46/46 合成数据冒烟通过并审核**（4 个仅存活检查：GATK、MACS3、SPAdes、Flye）；已端到端验证 `seqkit`（auto）、`fastp`（`smk:` wrapper + Conda）、`fastqc`（目录输出）、`bcftools query`（真实 VCF）与 `samtools flagstat`（真实 BAM）。运行期会自动隔离 conda 默认渠道，避免 conda 26 的 ToS 阻塞。
 
 ## 真实案例：WSMV 共感染分析
 
@@ -128,7 +128,7 @@ WSMV 案例用 12 个 RNA-seq 文库跑通了从工具接线、真实运行到�
 
 ## 当前限制
 
-- 可检索规模已实测：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。可直接执行的限于 5 个内置 wrapper、8 个条件可用的本机节点，以及本机按需封装的 Bioconda 工具；Top-50 清单首批 37 个工具已提供定义（35 个通过合成数据冒烟并审核）。nf-core 仅 86 个模块可自动生成 shell；Bioconda 长尾需按需封装并审核。
+- 可检索规模已实测：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。可直接执行的限于 5 个内置 wrapper、8 个条件可用的本机节点，以及本机按需封装的 Bioconda 工具；Top-50 清单 50 个工具已提供定义（46 个通过合成数据冒烟并审核，11 个目录输出）。nf-core 仅 86 个模块可自动生成 shell；Bioconda 长尾需按需封装并审核。
 - `smk:` wrapper + Conda 链路已用 fastp 实测跑通（首次需联网下载 wrapper 与环境）；上游 418 个 wrapper 未逐个验证。
 - MCP 已验证 stdio 接口，尚未在真实 Agent 客户端（如 Claude Desktop）中实测。
 - Linux 单机，无多用户、远程协作或集群配置界面；无多样本通配符展开，使用多条节点链。

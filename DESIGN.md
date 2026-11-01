@@ -43,7 +43,7 @@
 | G2 | 画布编译为标准 `Snakefile`，由 Snakemake 负责 DAG 调度、缓存、断点续跑与环境隔离 | ✅ 已实现，真实 Snakemake 9.27 运行通过 |
 | G3 | 「运行此步」「运行至此节点」「全量运行」，节点边框实时反映状态 | ✅ 已实现并实测 |
 | G4 | 快速文件校验与前 5 条记录预览（FASTA/FASTQ/SAM/BAM/CRAM/VCF/BCF 等） | ✅ 14 种格式验证通过 |
-| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次 50/50 已封装（43/43 合成数据冒烟通过并审核，7 个仅存活检查；11 个目录输出）；seqkit / fastp（smk + Conda）/ bcftools query（真实 VCF）/ fastqc（目录）均已端到端验证；nf-core 86 个可生成 shell |
+| G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次 50/50 已封装（46/46 合成数据冒烟通过并审核，4 个仅存活检查；11 个目录输出）；seqkit / fastp（smk + Conda）/ fastqc（目录）/ bcftools query（真实 VCF）/ samtools flagstat（真实 BAM）均已端到端验证；nf-core 86 个可生成 shell |
 | G6 | 通过 MCP 暴露 7 个高层工具 | ✅ 7 个工具经 stdio 客户端验证；⚠️ 未在 Claude Code/Desktop 中实测 |
 
 ### 1.2 非目标（v1 明确不做）
@@ -536,7 +536,7 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 | :--- | :--- |
 | 单元/集成（`tests/test_backend.py`，15 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、目录输出编译、目录预览、文件检查、自动封装定义校验、Top-50 清单定义校验、审核覆盖、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
 | 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项） |
-| 端到端 | auto `seqkit`（合成 FASTQ）、`smk:bio/fastp`（wrapper + Conda）、auto `bcftools query`（课题真实 VCF）、auto `fastqc`（目录输出）均经编译与 Snakemake 真实运行通过；Top-50 首批 43/43 合成数据冒烟通过 |
+| 端到端 | auto `seqkit`（合成 FASTQ）、`smk:bio/fastp`（wrapper + Conda）、auto `fastqc`（目录输出）、`bcftools query`（课题真实 VCF）、`samtools flagstat`（课题真实 BAM）均经编译与 Snakemake 真实运行通过；Top-50 首批 46/46 合成数据冒烟通过 |
 | 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、大规模索引性能 |
 
 ---

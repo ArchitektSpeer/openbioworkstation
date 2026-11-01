@@ -118,6 +118,12 @@ RECIPES = {
     "auto:salmon/salmon-index": {"files": {"transcripts": ("tx.fa", FASTA)}},
     "auto:mosdepth/mosdepth": {"bam": True},
     "auto:quast/quast": {"files": {"contigs": ("contigs.fa", CONTIG)}},
+    "auto:multiqc/multiqc": {"fastqc_report": True},
+    "auto:star/star-genome": {
+        "files": {"reference": ("ref.fa", CONTIG)},
+        "params": {"sa_index_nbases": 6},
+    },
+    "auto:prokka/prokka": {"files": {"contigs": ("contigs.fa", CONTIG)}},
 }
 
 
@@ -171,6 +177,28 @@ def run_tool(config, registry, tool_id, conda, timeout):
                 if "BAM" in port.formats and f"input.{port.name}" not in values:
                     values[f"input.{port.name}"] = str(path)
                     break
+        if recipe.get("fastqc_report"):
+            reads = work / "reads.fq"
+            reads.write_text(FASTQ)
+            fastqc_env = config.conda_prefix / "biows-fastqc"
+            subprocess.run(
+                [
+                    conda,
+                    "run",
+                    "-p",
+                    str(fastqc_env),
+                    "bash",
+                    "-lc",
+                    f"fastqc -q --outdir {shlex.quote(str(work))} {shlex.quote(str(reads))}",
+                ],
+                check=True,
+                capture_output=True,
+                timeout=timeout,
+            )
+            report = work / "reads_fastqc.zip"
+            if not report.is_file():
+                raise FileNotFoundError("FastQC 报告未生成")
+            values["input.reports"] = str(report)
         if recipe.get("hmm"):
             alignment = work / "aln.fa"
             alignment.write_text(HMM_ALIGNMENT)
@@ -217,6 +245,8 @@ def run_tool(config, registry, tool_id, conda, timeout):
                 values[f"output.{port.name}"] = str(work / f"{port.name}{extension}")
         for param in spec.params:
             values[f"params.{param.name}"] = str(param.default)
+        for name, value in recipe.get("params", {}).items():
+            values[f"params.{name}"] = str(value)
         values["threads"] = "1"
         values["log"] = str(work / "task.log")
         commandline = render(spec.execution.shell, values)
