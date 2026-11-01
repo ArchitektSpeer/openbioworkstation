@@ -27,7 +27,7 @@ def main():
         text(57, 178, english, 25, MUTED)
         d.line((55, 235, 1025, 235), fill=LINE, width=2)
         d.line((55, 995, 1025, 995), fill=LINE, width=2)
-        text(55, 1017, "生物信息学工作流 · Linux · MIT", 23, MUTED)
+        text(55, 1017, "生物信息学工作流 · Linux · GPL-3.0", 23, MUTED)
         text(975, 1010, f"{i:02}", 34, BLUE, True)
         return im, d, text
 

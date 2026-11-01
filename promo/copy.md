@@ -16,9 +16,9 @@ OpenBioWorkstation integrates NodeGraphQt, Snakemake and MCP to associate workfl
 
 ## 社交平台短文 / Short social post
 
-OpenBioWorkstation：用节点画布组织生信流程，由 Snakemake 执行，并通过 MCP 与 Agent 协作。现提供Agent 协作教程、可运行的合成数据示例及研究展示附件。Linux 单机，MIT 开源。
+OpenBioWorkstation：用节点画布组织生信流程，由 Snakemake 执行，并通过 MCP 与 Agent 协作。现提供Agent 协作教程、可运行的合成数据示例及研究展示附件。Linux 单机，GPL-3.0 开源。
 
-OpenBioWorkstation combines a visual bioinformatics canvas, Snakemake execution and MCP-based agent assistance. Includes an agent-collaboration guide, a runnable synthetic-data tutorial and research showcase PDFs. Linux desktop, single machine, MIT licensed.
+OpenBioWorkstation combines a visual bioinformatics canvas, Snakemake execution and MCP-based agent assistance. Includes an agent-collaboration guide, a runnable synthetic-data tutorial and research showcase PDFs. Linux desktop, single machine, licensed under GPL-3.0-only.
 
 ## 技术社区 / Technical community
 

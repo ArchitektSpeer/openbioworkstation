@@ -77,7 +77,7 @@ def main():
     )
     rule(im, 4750, 3108, x)
     text(im, (x, 4800), "github.com/ArchitektSpeer/openbioworkstation", 45, ACCENT, True)
-    text(im, (2880, 4800), "MIT", 55, bold=True)
+    text(im, (2880, 4800), "GPL-3.0", 55, bold=True)
     im.save(ROOT / "poster.png", dpi=(300, 300))
     im.save(ROOT / "poster.pdf", "PDF", resolution=300)
 

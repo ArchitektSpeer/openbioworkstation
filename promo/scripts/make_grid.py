@@ -90,7 +90,7 @@ def main():
     text(im, (56, 570), "github.com/ArchitektSpeer/", 40, ACCENT)
     text(im, (56, 630), "openbioworkstation", 49, ACCENT, True)
     text(im, (56, 715), "docs/agent-workflow.en.md", 33, ACCENT)
-    text(im, (56, 800), "MIT License", 56, bold=True)
+    text(im, (56, 800), "GNU GPL v3.0", 56, bold=True)
     text(im, (56, 885), "单机 · 无多用户 · 工具需逐项验证", 31, MUTED)
     text(im, (56, 937), "Single machine; validate each tool and client.", 27, MUTED)
     cards.append(im)

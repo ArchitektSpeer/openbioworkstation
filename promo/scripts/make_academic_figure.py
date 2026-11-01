@@ -125,7 +125,7 @@ def main():
     )
     line(130, 2695, 3470, 2695, INK, 2)
     txt(130, 2725, "github.com/ArchitektSpeer/openbioworkstation", 31, ACCENT)
-    txt(2510, 2725, "Linux · MIT · docs/agent-workflow.en.md", 28, MUTED)
+    txt(2510, 2725, "Linux · GPL-3.0 · docs/agent-workflow.en.md", 28, MUTED)
 
     im.save(ROOT / "academic-overview.png", dpi=(300, 300))
     small = im.copy()

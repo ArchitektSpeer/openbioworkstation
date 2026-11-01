@@ -64,3 +64,8 @@ The original screenshot assets were preserved. Card annotations and the A3 poste
 ## 2026-11-01 Agent 协作主题海报
 
 新增 `agent-poster.png`、`agent-poster.pdf` 及预览图。内容合并新版九宫格，强调研究者、Agent 与工作站的职责；数量沿用 `qzone/tool-counts.json` 的本机快照。真实截图来自 `assets/branch.png`，未修改界面内容。已使用 Poppler 渲染 PDF 并查看，未见标题、说明或适配流程文字重叠与截断。`pdfinfo` 确认为单页 A3；PNG 为 3508×4961、300 dpi。Ruff 检查通过；本次仅制作材料，未重新运行研究分析或工具验证。
+
+
+## 2026-11-01 许可证标注更新
+
+项目许可证调整为 GPL-3.0-only。已重建各版海报、九宫格及软件概览图，使许可证标注一致；两份海报 PDF 经 Poppler 渲染查看，未见页脚文字重叠或截断。原有研究 PDF 保持不变。

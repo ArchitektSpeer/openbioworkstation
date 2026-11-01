@@ -93,7 +93,7 @@ def main():
     text(180, 4540, "开源代码、Agent 协作教程与研究案例", 45, BLUE)
     line(4655)
     text(180, 4710, "github.com/ArchitektSpeer/openbioworkstation", 51, BLUE, True)
-    text(180, 4800, "Linux  ·  MIT License", 34, MUTED)
+    text(180, 4800, "Linux  ·  GNU GPL v3.0", 34, MUTED)
 
     im.save(ROOT / "agent-poster.png", dpi=(300, 300))
     im.save(ROOT / "agent-poster.pdf", "PDF", resolution=300)

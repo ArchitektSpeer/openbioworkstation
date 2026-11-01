@@ -144,4 +144,4 @@ File-format checks identify compatible data types, while bounded previews inspec
 
 ## License
 
-OpenBioWorkstation is distributed under the [MIT License](LICENSE). Dependencies and invoked bioinformatics tools retain their respective licenses.
+OpenBioWorkstation is distributed under the [GNU GPL v3.0](LICENSE). The license identifier is `GPL-3.0-only`. Dependencies and invoked bioinformatics tools retain their respective licenses.
