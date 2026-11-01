@@ -10,15 +10,15 @@ A visual workflow platform for local bioinformatics analysis and agent-assisted 
 
 ## 简介 / Short description
 
-OpenBioWorkstation 集成 NodeGraphQt、Snakemake 与 MCP，将流程构建、执行状态、文件检查和运行记录关联到同一本地工作区。研究者可与 Agent 协作组织计算分析，并检查实际运行证据。项目提供合成数据演示、双语教程及既有研究案例展示。
+OpenBioWorkstation 集成 NodeGraphQt、Snakemake 与 MCP，将流程构建、执行状态、文件检查和运行记录关联到同一本地工作区。研究者可与 Agent 协作组织计算分析，并检查实际运行证据。项目提供合成数据演示、Agent 协作教程及既有研究案例展示。
 
-OpenBioWorkstation integrates NodeGraphQt, Snakemake and MCP to associate workflow construction, execution state, file inspection and run records in a shared local workspace. Researchers and agents can organize computational analyses while inspecting execution evidence. Synthetic demos, bilingual tutorials and existing research case materials are provided.
+OpenBioWorkstation integrates NodeGraphQt, Snakemake and MCP to associate workflow construction, execution state, file inspection and run records in a shared local workspace. Researchers and agents can organize computational analyses while inspecting execution evidence. Synthetic demos, agent-collaboration tutorials and existing research case materials are provided.
 
 ## 社交平台短文 / Short social post
 
-OpenBioWorkstation：用节点画布组织生信流程，由 Snakemake 执行，并通过 MCP 与 Agent 协作。现提供中英双语说明、可运行的合成数据教程及研究展示附件。Linux 单机，MIT 开源。
+OpenBioWorkstation：用节点画布组织生信流程，由 Snakemake 执行，并通过 MCP 与 Agent 协作。现提供Agent 协作教程、可运行的合成数据示例及研究展示附件。Linux 单机，MIT 开源。
 
-OpenBioWorkstation combines a visual bioinformatics canvas, Snakemake execution and MCP-based agent assistance. Includes bilingual documentation, a runnable synthetic-data tutorial and research showcase PDFs. Linux desktop, single machine, MIT licensed.
+OpenBioWorkstation combines a visual bioinformatics canvas, Snakemake execution and MCP-based agent assistance. Includes an agent-collaboration guide, a runnable synthetic-data tutorial and research showcase PDFs. Linux desktop, single machine, MIT licensed.
 
 ## 技术社区 / Technical community
 
@@ -58,7 +58,7 @@ Limitations include no multi-user service or sample wildcard expansion, and tool
 
 **如何开始？ / Where should I start?**
 
-先运行离线演示，再按双语 Agent 教程完成 SeqKit 合成练习。 / Run the offline demo, then follow the bilingual agent tutorial for the synthetic SeqKit exercise.
+先运行离线演示，再按Agent 协作教程完成 SeqKit 合成练习。 / Run the offline demo, then follow the agent-collaboration tutorial for the synthetic SeqKit exercise.
 
 ## 声明依据 / Claim basis
 
