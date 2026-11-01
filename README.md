@@ -1,5 +1,7 @@
 # OpenBioWorkstation
 
+**简体中文** | [English](README.en.md)
+
 **面向本地生物信息学分析的可视化工作流构建与执行平台**
 
 OpenBioWorkstation 是面向 Linux 单机环境的生物信息学工作流软件，集成基于 NodeGraphQt 的图形编辑界面、基于 Snakemake 的工作流执行机制，以及基于模型上下文协议（Model Context Protocol，MCP）的程序化访问接口。系统以共享工作区为基础，将分析流程的图结构、工具定义、执行状态与运行记录关联存储，为交互式流程构建和智能体辅助操作提供统一接口。
@@ -34,6 +36,16 @@ uv pip install --python .venv/bin/python -r requirements.txt
 ```bash
 .venv/bin/python -m ui.workstation_window --workspace ~/biows/projects/demo
 ```
+
+## 与 Agent 协作开展生物信息学分析
+
+研究者负责研究问题、实验设计、参数选择与结果解释；Agent 通过 MCP 检索工具、构建节点图、发起运行并整理执行证据。这里的“实验”指计算分析，不涉及湿实验设备控制。
+
+- [中文教程：配置、调用示例与真实样本分析](docs/agent-workflow.zh-CN.md)
+- [English tutorial: setup, tool calls and real-data analysis](docs/agent-workflow.en.md)
+- [中英双语宣传文案与素材](promo/README.md)
+
+建议先完成教程中的合成 FASTQ → SeqKit 统计练习，再迁移到真实数据。教程中的工具调用已按当前 MCP 接口编写；具体 Agent 客户端的兼容性需单独验证。
 
 ## 系统架构与实现
 
@@ -77,7 +89,7 @@ MCP 服务提供 9 个高层工具，覆盖工具检索、节点添加、端口�
 
 ### 工具与配置
 
-当前提供 5 个内置 wrapper 定义（fastp、BWA index/mem、SAMtools sort/index）与 8 个本机工具节点（fastp、BWA index/mem、SAMtools view/sort/index、BCFtools stats、SeqKit stats）。此外可用 `python -m glue.fetch_catalog --all` 下载上游元数据，建立来自 snakemake-wrappers、nf-core/modules 与 Bioconda 的工具索引。现有记录包含 15,447 条索引条目；该数值反映特定元数据快照的规模，不等同于已验证可执行工具的数量（见“当前限制”）。本机节点仅在相应包和可执行文件存在时出现。可用以下命令建立本机环境：
+当前提供 5 个内置 wrapper 定义（fastp、BWA index/mem、SAMtools sort/index），以及基础本机工具节点（fastp、BWA index/mem、SAMtools view/sort/index、BCFtools stats、SeqKit stats）；当前代码还定义了 SAMtools 过滤去重和基于 pysam 的病毒位点统计节点。此外可用 `python -m glue.fetch_catalog --all` 下载上游元数据，建立来自 snakemake-wrappers、nf-core/modules 与 Bioconda 的工具索引。现有记录包含 15,447 条索引条目；该数值反映特定元数据快照的规模，不等同于已验证可执行工具的数量（见“当前限制”）。依赖外部工具的本机节点仅在相应包和可执行文件存在时出现；病毒位点统计节点基于 Python/pysam。可用以下命令建立本机环境：
 
 ```bash
 conda create -y --solver libmamba --override-channels \
@@ -157,11 +169,11 @@ python validation/prewarm_tools.py --conda /opt/miniconda3/bin/conda
 
 ![WSMV 应用案例的结果摘要](promo/assets/wsmv_result.png)
 
-公开仓库包含软件、文档与展示图像，未发布该案例的原始数据、分析脚本、工作区、完整报告及论文。因此，仅依据本仓库无法独立复核该案例的生物学结论或完整复现其分析过程。截图中的案例专用节点不属于内置工具库。
+公开仓库包含软件、文档、展示图像及经授权发布的[研究展示附件](promo/research/README.md)，包括案例稿件、研究介绍、软件展示流程和另一项小麦叶绿体 RNA 编辑探索性报告。附件为既有成品，不作为已发表或经同行评审的成果宣传。完整原始数据、分析脚本、参考文件与运行工作区未发布，因此本仓库仍不构成完整研究复现归档。历史截图中的案例专用节点不能直接视为默认已验证工具；当前可用节点见上文。
 
 ## 当前限制
 
-- 既有验证记录中的索引规模为：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。可直接执行的限于 5 个内置 wrapper、8 个条件可用的本机节点，以及本机按需封装的 Bioconda 工具；Top-50 清单 50 个工具已提供定义（46 个通过合成数据冒烟并审核，11 个目录输出）。nf-core 仅 86 个模块可自动生成 shell；其他 Bioconda 条目需按需封装并审核。
+- 既有验证记录中的索引规模为：下载上游元数据后索引 15,447 条（snakemake-wrappers 418、nf-core 2,125、Bioconda 12,888）。可直接执行的限于 5 个内置 wrapper、当前注册表中满足依赖条件的本机节点，以及本机按需封装的 Bioconda 工具；Top-50 清单 50 个工具已提供定义（46 个通过合成数据冒烟并审核，11 个目录输出）。nf-core 仅 86 个模块可自动生成 shell；其他 Bioconda 条目需按需封装并审核。
 - `smk:` wrapper + Conda 链路已用 fastp 实测跑通（首次需联网下载 wrapper 与环境）；上游 418 个 wrapper 未逐个验证。
 - MCP 已验证 stdio 接口，尚未在真实 Agent 客户端（如 Claude Desktop）中实测。
 - Linux 单机，无多用户、远程协作或集群配置界面；无多样本通配符展开，使用多条节点链。

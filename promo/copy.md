@@ -1,74 +1,71 @@
-# OpenBioWorkstation 宣传文案
+# 项目传播文案 / Project communication copy
 
-## 一句话定位
+[素材目录 / Asset guide](README.md) · [中文教程](../docs/agent-workflow.zh-CN.md) · [English tutorial](../docs/agent-workflow.en.md)
 
-把生信流程连起来，让每一步可见。
+## 一句话定位 / One-line description
 
-## 一段话简介
+面向本地生物信息学分析的可视化工作流与 Agent 协作平台。
 
-OpenBioWorkstation 是面向 Linux 的本地生信节点工作台。用画布连接输入、工具与输出，编译为 Snakemake 执行，支持单步重跑、缓存跳过、状态着色和文件预览。Agent 可通过 MCP 操作同一工作区。WSMV 案例已跑通完整流程；当前工具生态尚小，面向单机使用。
+A visual workflow platform for local bioinformatics analysis and agent-assisted operation.
 
-## 社交媒体
+## 简介 / Short description
 
-### 小红书
+OpenBioWorkstation 集成 NodeGraphQt、Snakemake 与 MCP，将流程构建、执行状态、文件检查和运行记录关联到同一本地工作区。研究者可与 Agent 协作组织计算分析，并检查实际运行证据。项目提供合成数据演示、双语教程及既有研究案例展示。
 
-🧬 生信流程，也可以连起来看！OpenBioWorkstation 把节点画布、Snakemake 和 MCP 接在一起：连线检查文件类型，运行时看节点状态，需要更新时单步重跑，还能预览文件。💻 全部在本地执行。WSMV 真实案例跑通完整流程，结果是未检出共感染的显著影响，不能当成重大生物学发现。项目还早：工具库小、单机、无多用户；MCP 已做 stdio 验证，真实客户端尚未验证。MIT 开源，先试试离线演示吧！#生物信息学 #开源工具 #Snakemake
+OpenBioWorkstation integrates NodeGraphQt, Snakemake and MCP to associate workflow construction, execution state, file inspection and run records in a shared local workspace. Researchers and agents can organize computational analyses while inspecting execution evidence. Synthetic demos, bilingual tutorials and existing research case materials are provided.
 
-### 微博
+## 社交平台短文 / Short social post
 
-OpenBioWorkstation：用节点画布组织本地生信流程，交给 Snakemake 执行。类型检查、单步重跑、缓存跳过、状态着色、文件预览与 MCP 接入。WSMV 案例完整跑通；工具生态尚小，单机使用。MIT 开源，附离线演示。
+OpenBioWorkstation：用节点画布组织生信流程，由 Snakemake 执行，并通过 MCP 与 Agent 协作。现提供中英双语说明、可运行的合成数据教程及研究展示附件。Linux 单机，MIT 开源。
 
-### 技术社区（英文）
+OpenBioWorkstation combines a visual bioinformatics canvas, Snakemake execution and MCP-based agent assistance. Includes bilingual documentation, a runnable synthetic-data tutorial and research showcase PDFs. Linux desktop, single machine, MIT licensed.
 
-OpenBioWorkstation is a Linux desktop workflow editor built with NodeGraphQt, Snakemake, and the MCP SDK. A shared Python layer checks port formats, compiles the canvas into a Snakefile, and records run snapshots. The UI supports partial runs, forced single-step reruns, cached skips, and file previews. MCP edits share the same workspace with revision checks. A WSMV case exercised the full workflow; it yielded a limited negative result. There are five built-in wrapper definitions and eight local tool nodes, conditional on installed binaries. Upstream catalog scale, real MCP clients, and the smk: wrapper-plus-Conda path remain unverified. This is a single-machine project with no multi-user mode. MIT licensed; a synthetic offline demo is included.
+## 技术社区 / Technical community
 
-## README Hero
+OpenBioWorkstation 是一个 Linux 桌面生物信息学工作流工具。图形界面与 MCP 使用同一本地会话；节点图被编译为 Snakefile，并保留运行快照、日志和状态。研究者可让 Agent 检索工具、连接端口、先 dry-run 再执行，并基于实际输出核对结果。配套教程使用两个合成 FASTQ 读段和本机 SeqKit，避免把复杂案例当作入门前提。
 
-把生信流程连起来，让每一步可见。
+当前限制包括无多用户服务、无多样本通配符展开，以及工具定义需要逐项检查。MCP stdio 和教程链路已实测，具体 Agent 客户端仍需分别验证。研究附件包括 WSMV 案例稿件及小麦叶绿体 RNA 编辑探索性报告；这些材料不作为已发表或经同行评审的成果宣传，也不包含完整数据与代码归档。
 
-Linux 本地生信节点工作台，由成熟开源组件与 Python 胶水层组成。
+OpenBioWorkstation is a Linux desktop bioinformatics workflow tool. Its graphical interface and MCP server share a local session. Graphs compile into Snakefiles, with retained execution snapshots, logs and state. Researchers can ask an agent to discover tools, connect ports, perform a dry run and inspect actual outputs. The companion tutorial uses two synthetic FASTQ reads and a local SeqKit node, without requiring a complete case study.
 
-- 节点画布与文件格式端口检查。
-- 编译为 Snakemake，支持全量、运行至此、单步重跑与缓存跳过。
-- 节点状态实时着色、文件校验与预览、运行历史。
-- MCP 让 Agent 搭图与运行，UI 与 Agent 同步共享工作区。
+Limitations include no multi-user service or sample wildcard expansion, and tool definitions requiring individual review. MCP stdio and the tutorial workflow have been exercised; each end-user agent client requires separate verification. Research attachments include a WSMV case manuscript and an exploratory wheat chloroplast RNA-editing report. They are not presented as published or peer-reviewed findings, and do not constitute complete data/code archives.
 
-![软件九宫格](grid/grid.png)
+## 演示讲解顺序 / Demonstration sequence
 
-## 功能对比
+1. **问题 / Question**：介绍研究问题、样本设计和研究者与 Agent 的分工 / Introduce the question, sample design and division of responsibilities.
+2. **构建 / Construction**：通过 MCP 检索 SeqKit，创建输入、工具及输出节点 / Discover SeqKit through MCP and create input, tool and output nodes.
+3. **检查 / Inspection**：显示端口、输入预览和 dry-run 结果 / Inspect ports, input previews and dry-run results.
+4. **执行 / Execution**：展示实际 run ID、状态、日志及 TSV / Show actual run IDs, states, logs and the TSV.
+5. **扩展 / Extension**：解释如何迁移到真实样本，再展示既有研究附件 / Explain real-data extensions and present the existing research artifacts.
 
-以下为工作方式比较，不把其他图形化工具视为同一种实现。
+## 常见问题 / FAQ
 
-| 维度 | OpenBioWorkstation 当前实现 | 手写 Snakemake 脚本 | 图形化流程工具 |
-|---|---|---|---|
-| 流程表达 | 桌面节点画布，编译为 Snakefile | 直接编写规则，表达能力取决于脚本 | 依具体产品而异，通常用画布或表单 |
-| 类型检查 | 连线时检查格式标签，不证明语义正确 | 可由作者加入检查 | 依产品及工具定义而异 |
-| 调度与缓存 | 委托 Snakemake | 使用 Snakemake | 依产品后端而异 |
-| Agent 接入 | MCP stdio 已验证，真实客户端尚未验证 | 需自行集成 | 依产品而异 |
-| 工具生态 | 5 个内置定义 + 8 个条件可用的本机节点 | 可自行封装命令或使用上游 wrapper | 依产品及部署配置而异 |
-| 多样本 | 多条节点链，无通配符展开 | 可直接编写通配符规则 | 依产品而异 |
-| 部署与协作 | Linux 单机，无多用户、无集群配置界面 | 可自行配置执行环境 | 部分产品提供服务端协作；不能一概而论 |
+**是否自动完成所有研究？ / Does it automate all research?**
 
-## 常见问题
+不。工具调用可辅助流程操作；研究设计、参数合理性和结论解释仍需研究者负责。 / No. Tool calls assist operational work; researchers remain responsible for study design, justified parameters and interpretation.
 
-1. **和 Galaxy / nf-core 有什么不同？** 本项目定位是本地桌面胶水层：用 NodeGraphQt 画图，再交给 Snakemake。没有 Galaxy 式多用户服务；nf-core 元数据适配代码已存在，但上游库尚未下载，不能宣称已支持整个生态。这里不替代完整的平台或经验证的领域流程。
-2. **需要会写代码吗？** 预置离线演示可直接操作画布；使用现有节点仍需理解文件格式、工具参数和环境安装。新增复杂工具可能需要编写、审核封装，不能承诺零代码完成所有分析。
-3. **数据会上传吗？** 分析与工作区均在本地，本软件没有数据上传服务。安装依赖、下载输入或获取 wrapper/Conda 环境可能访问网络，需自行管理所选工具和 Agent 客户端的数据策略。
-4. **能直接运行海报里的 WSMV 流程吗？** 图中包含案例自定义节点。公开仓库只有软件、文档和宣传成品，不含该案例的原始数据、分析脚本、报告或论文；先用 `./run-demo.sh` 体验合成文件检查流程。
-5. **现在有哪些验证边界？** MCP 已用 stdio 客户端验证，尚未在 Claude Desktop 等真实客户端实测；`smk:` wrapper + Conda 尚未真实跑通。当前仅 5 个内置 wrapper 定义与 8 个本机工具节点，上游规模未实测；无多用户与多样本通配符展开。
+**是否支持所有索引工具？ / Are all indexed tools executable?**
 
-## 依据索引
+不。索引元数据、可生成命令、可执行定义及已验证流程属于不同层级，应以当前注册表、依赖和测试为准。 / No. Metadata entries, convertible commands, executable definitions and validated workflows are different levels of support.
 
-| 能力声明 | 依据 |
-|---|---|
-| Linux 节点画布、格式检查 | DESIGN.md §1 G1、§5.4、§7 |
-| Snakemake 编译、三种运行、缓存、状态、历史 | DESIGN.md §1 G2–G3、§5.3–5.4 |
-| 文件校验、有限预览 | DESIGN.md §1 G4、§5.1 |
-| MCP 搭图与运行、同步和 revision 检查 | DESIGN.md §1 G6、§5.5、§9 |
-| 5 个内置定义、8 个本机节点及安装条件 | DESIGN.md §1 G5、§5.2.1–5.2.3 |
-| 上游规模、真实客户端和 smk: + Conda 未验证 | DESIGN.md §1、§13–15 |
-| 本地架构、无多用户和通配符 | DESIGN.md §1.2、§3、§8–10 |
-| 离线演示为合成检查流程 | examples/README.md |
-| WSMV 完整流程与受限阴性结论 | 本地 LOGBOOK：B3、B4、D 结束审核；论文 Summary（未随仓库发布） |
+**数据是否全部留在本地？ / Does all data remain local?**
 
-案例证据公开范围限于 `assets/` 内成品图片。案例自定义节点不是内置软件能力。所有数字均为当前实现计数或案例既有结果，无新增性能测试或速度承诺。
+工作流执行与文件存储在本地；依赖下载可能联网，外部 Agent 的提示词及工具返回数据由其客户端策略决定。 / Execution and storage are local; dependency retrieval may use the network, and external-agent prompts and tool results follow client policy.
+
+**案例是否构成生物学发现证明？ / Do cases establish biological findings?**
+
+案例仅展示特定分析过程及其既有报告。WSMV 阴性结果不证明等效，探索性报告的新颖性判断亦未为本次发布重新核查。 / Cases demonstrate particular analyses and their existing reports. The WSMV negative result does not establish equivalence, and exploratory novelty claims were not rechecked for this release.
+
+**如何开始？ / Where should I start?**
+
+先运行离线演示，再按双语 Agent 教程完成 SeqKit 合成练习。 / Run the offline demo, then follow the bilingual agent tutorial for the synthetic SeqKit exercise.
+
+## 声明依据 / Claim basis
+
+- 系统结构与功能 / Architecture and behavior: [README 中文](../README.md), [English](../README.en.md), [设计文档 / Design](../DESIGN.md).
+- 当前 MCP 工具与参数 / Current MCP signatures: [服务实现 / Server](../mcp_server/bio_mcp.py).
+- 合成练习及本机验证范围 / Synthetic exercise and verification scope: [教程 / Tutorial](../docs/agent-workflow.en.md), [脚本 / Script](../examples/agent_seqkit.py).
+- 图像来源与既有视觉复核限制 / Image provenance and historical review limits: [素材目录 / Assets](README.md), [复核记录 / Review](review_log.md).
+- 研究附件状态与限制 / Research status and limits: [研究展示 / Research showcase](research/README.md).
+
+未新增性能、速度、用户规模或机构背书声明。 / No performance, speed, adoption or institutional endorsement claim is made.

@@ -47,3 +47,15 @@ qodercn -p -m Qwen3.8-Flash --permission-mode bypass_permissions \
 ## 未完成项
 
 受 Qoder 服务排队及网络失败影响，本次没有取得全部成品的有效 Qwen 意见，也没有取得修改后第 3 格的有效复核结论。两轮尝试已结束，**本批物料不能声称“已全部通过视觉模型复核”**。这一限制不影响软件测试与仓库安全检查的独立结果。
+
+## 2026-11-01 双语更新复核 / Bilingual update review
+
+本轮保留 `assets/` 原始截图，更新九宫格中英文标题、说明及 A3 海报，并加入 Agent 教程入口。既有 Qwen 记录仅适用于历史版本，不作为本轮模型复核证明。本轮未调用外部视觉模型。
+
+The original screenshot assets were preserved. Card annotations and the A3 poster were updated with bilingual text and the agent-tutorial entry point. Historical Qwen records do not constitute review of this revision; no external visual model was used for this update.
+
+- 已查看重建后的九宫格总图；标题、说明与截图无可见重叠或截断。截图内细字仍需打开原图查看。 / Inspected the rebuilt contact sheet; no visible annotation clipping or overlap. Fine screenshot text still requires the original assets.
+- 已将最新 `poster.pdf` 用 Poppler 渲染为 PNG 并查看；布局无可见重叠或截断。`pdfinfo` 确认为 A3 单页。 / Rendered and inspected the latest poster PDF with Poppler; no visible overlap or clipping. `pdfinfo` confirms one A3 page.
+- 九格各 1080×1080，总图 3240×3240；海报 3508×4961，300 dpi。PDF 仍为不可选取文字的图像版。 / Cards are 1080×1080, the sheet 3240×3240, and the poster 3508×4961 at 300 dpi. The PDF remains an image-based version.
+- 研究附件为原有 PDF 的逐字节副本，未重排或改写；`research/SHA256SUMS` 记录校验和。 / Research attachments are unchanged byte-for-byte copies, with checksums in `research/SHA256SUMS`.
+- Agent 教程配套脚本已通过实际 stdio、dry-run、真实执行及 2 条序列/8 bp 输出检查；本轮 pytest 为 17 passed，Ruff 检查通过。 / The tutorial script completed actual stdio calls, dry-run, execution and checks for two sequences/eight bases; pytest reported 17 passed and Ruff passed.

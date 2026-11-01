@@ -1,5 +1,7 @@
 # 离线演示
 
+**简体中文** | [English](README.en.md)
+
 在项目根目录运行 `./run-demo.sh`，或：
 
 ```bash

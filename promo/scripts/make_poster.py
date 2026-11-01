@@ -1,4 +1,4 @@
-"""Rebuild A3 300dpi poster PNG and one-page PDF; requires Pillow."""
+"""Rebuild the bilingual A3 poster from actual, shipped screenshots."""
 
 from common import ACCENT, BG, LINE, MUTED, ROOT, Image, ImageDraw, photo, rule, text
 
@@ -7,49 +7,77 @@ def main():
     im = Image.new("RGB", (3508, 4961), BG)
     d = ImageDraw.Draw(im)
     x = 200
-    text(im, (x, 125), "OPEN SOURCE / LOCAL BIOINFORMATICS", 48, ACCENT, True)
-    text(im, (x, 235), "OpenBioWorkstation", 148, bold=True)
-    text(im, (x, 450), "把生信流程连起来，让每一步可见", 83, bold=True)
-    text(im, (x, 595), "可视化节点画布  +  Snakemake 执行  +  MCP Agent 接入", 55, MUTED)
-    rule(im, 740, 3108, x)
-    text(im, (x, 810), "01   输入 → 工具 → 输出", 65, bold=True)
-    photo(im, "branch", (x, 940, 3108, 850))
-    text(im, (x, 1830), "真实 WSMV 案例画布局部；案例自定义节点不随软件内置发布。", 41, MUTED)
-    text(im, (x, 1970), "02   从接线到重跑，保留过程", 65, bold=True)
+    text(im, (x, 110), "OPEN SOURCE / LOCAL BIOINFORMATICS / AGENT ASSISTANCE", 42, ACCENT, True)
+    text(im, (x, 210), "OpenBioWorkstation", 148, bold=True)
+    text(im, (x, 420), "本地生信工作流与 Agent 协作", 90, bold=True)
+    text(im, (x, 555), "Visual workflows and agent-assisted bioinformatics", 60, MUTED)
+    text(im, (x, 665), "NodeGraphQt  /  Snakemake  /  MCP", 55, ACCENT)
+    rule(im, 780, 3108, x)
+    text(im, (x, 830), "01   输入 → 工具 → 输出 / INPUT → TOOLS → OUTPUT", 57, bold=True)
+    photo(im, "branch", (x, 950, 3108, 790))
+    text(im, (x, 1780), "真实 WSMV 案例截图；包含案例专用节点。", 40, MUTED)
+    text(im, (x, 1845), "Actual WSMV case screenshot; includes case-specific nodes.", 39, MUTED)
+    text(im, (x, 1980), "02   过程检查与执行 / INSPECTION AND EXECUTION", 57, bold=True)
     features = [
-        ("ports", "类型检查", "不兼容连线被拒绝", (0, 1560, 1600, 1620)),
-        ("running", "状态着色", "节点边框跟随运行状态", (550, 700, 1340, 1000)),
-        ("cache", "单步与缓存", "运行至此、单步重跑与缓存跳过", (2000, 1835, 3200, 1920)),
-        ("preview", "校验与预览", "快速预览有限记录，不代表全文件", (1700, 0, 3200, 700)),
+        (
+            "ports",
+            "端口格式检查 / Port checks",
+            "拒绝不兼容格式 / Reject incompatible formats",
+            (0, 1560, 1600, 1620),
+        ),
+        (
+            "running",
+            "运行状态 / Execution state",
+            "显示节点状态 / Display node execution states",
+            (550, 700, 1340, 1000),
+        ),
+        (
+            "cache",
+            "单步与缓存 / Reruns and cache",
+            "局部重跑 / Partial runs and cached skips",
+            (2000, 1835, 3200, 1920),
+        ),
+        (
+            "preview",
+            "文件预览 / File previews",
+            "有限记录预览 / Bounded record inspection",
+            (1700, 0, 3200, 700),
+        ),
     ]
     for i, (name, title, sub, crop) in enumerate(features):
         xx = x + (i % 2) * 1600
-        yy = 2110 + (i // 2) * 555
-        d.rounded_rectangle((xx, yy, xx + 1500, yy + 510), radius=18, outline=LINE, width=3)
-        text(im, (xx + 35, yy + 20), title, 54, bold=True)
-        photo(im, name, (xx + 35, yy + 105, 1430, 285), crop)
-        text(im, (xx + 35, yy + 420), sub, 38, MUTED)
-    text(im, (x, 3290), "03   真实案例 / WSMV × TriMV", 65, bold=True)
-    photo(im, "wsmv_result", (x, 3410, 1680, 810))
-    text(im, (2020, 3470), "完整流程已跑通", 64, bold=True)
-    for y, s in [
-        (3600, "12 个 RNA-seq 文库再分析"),
-        (3690, "未检出共感染的显著影响"),
-        (3780, "0 / 73 位点达到 FDR < 0.10"),
-        (3890, "样本量有限，不证明等效"),
-        (4000, "案例展示流程，不宣称重大发现"),
+        yy = 2110 + (i // 2) * 520
+        d.rounded_rectangle((xx, yy, xx + 1500, yy + 485), radius=18, outline=LINE, width=3)
+        text(im, (xx + 35, yy + 22), title, 43, bold=True)
+        photo(im, name, (xx + 35, yy + 105, 1430, 265), crop)
+        text(im, (xx + 35, yy + 407), sub, 34, MUTED)
+    text(im, (x, 3200), "03   研究案例 / RESEARCH CASE: WSMV × TriMV", 57, bold=True)
+    photo(im, "wsmv_result", (x, 3320, 1680, 690))
+    for y, cn, en in [
+        (3330, "12 个 RNA-seq 文库", "12 RNA-seq libraries"),
+        (3495, "0/73 位点达到 FDR < 0.10", "0/73 sites at FDR < 0.10"),
+        (3660, "未检出显著关联", "No significant association detected"),
+        (3825, "阴性结果不证明等效", "A negative result is not equivalence"),
     ]:
-        text(im, (2020, y), s, 40, MUTED)
-    rule(im, 4290, 3108, x)
-    text(im, (x, 4350), "NodeGraphQt · Snakemake · MCP · Bioconda", 61, bold=True)
-    text(im, (x, 4450), "复用成熟开源组件，不重复造轮子", 48)
-    text(im, (x, 4530), "5 个内置 wrapper 定义 + 8 个本机节点（需安装对应工具）", 38, MUTED)
+        text(im, (2020, y), cn, 43, bold=True)
+        text(im, (2020, y + 72), en, 35, MUTED)
+    rule(im, 4070, 3108, x)
+    text(im, (x, 4120), "04   与 Agent 协作 / WORK WITH AN AGENT", 57, bold=True)
+    text(im, (x, 4230), "研究者定义问题 → Agent 搭图 → dry-run → 执行与核对", 48)
+    text(im, (x, 4310), "Define the question → build → dry-run → execute → inspect", 45, MUTED)
+    text(im, (x, 4425), "中英教程 / Tutorial: docs/agent-workflow.en.md", 43, ACCENT, True)
+    text(im, (x, 4510), "研究附件 / Research PDFs: promo/research/", 40, MUTED)
+    text(im, (x, 4600), "Linux 单机；MCP stdio 已验证；具体 Agent 客户端需单独验证。", 37, MUTED)
     text(
-        im, (x, 4590), "上游生态规模未实测；MCP 真实客户端、smk: + Conda 链路尚未验证。", 36, MUTED
+        im,
+        (x, 4665),
+        "Single machine; stdio tested; validate each agent client separately.",
+        37,
+        MUTED,
     )
-    rule(im, 4690, 3108, x)
-    text(im, (x, 4750), "github.com/ArchitektSpeer/openbioworkstation", 48, ACCENT, True)
-    text(im, (2880, 4750), "MIT", 60, bold=True)
+    rule(im, 4750, 3108, x)
+    text(im, (x, 4800), "github.com/ArchitektSpeer/openbioworkstation", 45, ACCENT, True)
+    text(im, (2880, 4800), "MIT", 55, bold=True)
     im.save(ROOT / "poster.png", dpi=(300, 300))
     im.save(ROOT / "poster.pdf", "PDF", resolution=300)
 

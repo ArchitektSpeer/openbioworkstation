@@ -4,12 +4,33 @@ Requires Pillow and Noto Sans CJK SC (font collection index 2).
 
 from common import ACCENT, BG, MUTED, ROOT, Image, photo, rule, text
 
+EN_TITLES = {
+    1: "Visual workflows for local bioinformatics",
+    2: "Inspect the workflow graph",
+    3: "Check file-format compatibility",
+    4: "Follow execution state",
+    5: "Rerun a step and reuse cached outputs",
+    6: "Inspect input and output files",
+    7: "Share a workspace with an agent via MCP",
+    8: "Research case: WSMV coinfection",
+    9: "Start with the demo and agent tutorial",
+}
+EN_NOTES = {
+    2: "Case overview and branch detail; case-specific nodes are shown.",
+    3: "An incompatible JSON-to-BAM connection is rejected.",
+    4: "Actual BWA MEM execution; yellow indicates a running node.",
+    5: "Actual single-step execution with other nodes skipped.",
+    6: "Bounded previews do not establish whole-file integrity.",
+    7: "Stdio tested; end-user agent clients require separate verification.",
+}
+
 
 def base(i, title, tag):
     im = Image.new("RGB", (1080, 1080), BG)
     text(im, (56, 40), "OPENBIOWORKSTATION  /  " + tag, 24, ACCENT, True)
-    text(im, (56, 105), title, 54, bold=True)
-    rule(im, 190)
+    text(im, (56, 95), title, 48, bold=True)
+    text(im, (56, 161), EN_TITLES[i], 23, MUTED)
+    rule(im, 200)
     rule(im, 980)
     text(im, (56, 1004), "LOCAL WORKFLOWS  ·  OPEN SOURCE", 23, MUTED)
     text(im, (968, 998), f"{i:02}", 34, ACCENT, True)
@@ -18,7 +39,7 @@ def base(i, title, tag):
 
 def main():
     cards = []
-    im = base(1, "把生信流程连起来", "工作台")
+    im = base(1, "本地生信可视化工作流", "工作台")
     text(im, (56, 240), "OpenBio", 102, bold=True)
     text(im, (56, 370), "Workstation", 102, bold=True)
     text(im, (56, 540), "可视化节点 · Snakemake 执行", 41)
@@ -54,20 +75,24 @@ def main():
             photo(im, name, (56, 230, 968, 450))
             text(im, (56, 715), "stdio 已验证 · 真实客户端尚未验证", 33)
             text(im, (56, 782), "add_node → connect_nodes → run", 32, ACCENT)
-        text(im, (56, 934), note, 26, MUTED)
+        text(im, (56, 912), note, 26, MUTED)
+        text(im, (56, 950), EN_NOTES[i], 22, MUTED)
         cards.append(im)
-    im = base(8, "真实案例，完整流程跑通", "WSMV")
+    im = base(8, "WSMV 共感染分析案例", "WSMV")
     photo(im, "wsmv_result", (56, 235, 968, 530))
     text(im, (56, 805), "未检出共感染的显著影响", 43, bold=True)
-    text(im, (56, 880), "样本量有限；阴性结果不证明等效", 31, MUTED)
+    text(im, (56, 870), "样本量有限；阴性结果不证明等效", 31, MUTED)
+    text(im, (56, 930), "0/73 sites at FDR < 0.10; no equivalence claim.", 27, MUTED)
     cards.append(im)
     im = base(9, "从本地演示开始", "参与")
     text(im, (56, 270), "./run-demo.sh", 68, bold=True)
     text(im, (56, 395), "合成样本 · 离线运行", 40)
     text(im, (56, 570), "github.com/ArchitektSpeer/", 40, ACCENT)
     text(im, (56, 630), "openbioworkstation", 49, ACCENT, True)
+    text(im, (56, 715), "docs/agent-workflow.en.md", 33, ACCENT)
     text(im, (56, 800), "MIT License", 56, bold=True)
-    text(im, (56, 890), "小规模工具库 · 单机 · 无多用户", 31, MUTED)
+    text(im, (56, 885), "单机 · 无多用户 · 工具需逐项验证", 31, MUTED)
+    text(im, (56, 937), "Single machine; validate each tool and client.", 27, MUTED)
     cards.append(im)
     out = ROOT / "grid"
     out.mkdir(exist_ok=True)
