@@ -139,6 +139,14 @@ MCP 客户端可调用 `wrap_tool("conda:fastp")`，再用 `get_wrap_job(job_id)
 
 未配置 LLM 时仍会创建环境并抓取帮助，供你或 Agent 补定义。
 
+### 预热常用工具
+
+```bash
+python validation/prewarm_tools.py --conda /opt/miniconda3/bin/conda
+```
+
+读取 `tool_packs/prewarm.txt`（191 个常用包），对已索引但未封装的包批量执行按需封装；自动跳过已封装/不存在的包，剩余磁盘低于 25GB 时停止，结果写入 `validation/prewarm-result.json`。
+
 ## 真实案例：WSMV 共感染分析
 
 WSMV 案例用 12 个 RNA-seq 文库跑通了从工具接线、真实运行到结果分析的完整流程。未检出 TriMV 共感染对 WSMV 宿主内多样性的显著影响：73 个受检位点中无位点达到 FDR < 0.10。样本量有限，阴性结果不证明等效。此案例证明流程可完成，不代表重大生物学发现或所有分析均由内置节点完成。

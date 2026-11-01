@@ -228,7 +228,8 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 - 目录类输出用 `directory: true` 标记：编译器生成 `directory(<path>)` 输出，下游可把它作为目录输入；文件预览对目录返回 `DIRECTORY` 与条目列表。
 - 额外依赖：清单可声明 `dependencies`（如 `python=3.11`），写入 `environment.yaml` 并在建环境时一并求解，用于上游包的 Python 兼容性。
 - 批量封装：`python -m glue.wrap_batch --manifest tool_packs/top50.yaml`，清单见 `tool_packs/top50.yaml`，可重复执行并复用已有环境。
-- 按需封装服务（`glue/wrap_service.py`）：对 `conda:<pkg>` 建环境，从 `conda-meta` 找出该包的可执行文件，抓取帮助，调用可配置的 OpenAI 兼容 LLM 生成定义，校验并落盘；随后用合成输入试运行，失败标记 `needs_review`。入口：工具库右键「按需封装/校验」、MCP `wrap_tool`/`get_wrap_job`、CLI `python -m glue.wrap_service --tool ...`。生成的工具默认 `reviewed=false`。
+- 按需封装服务（`glue/wrap_service.py`）：对 `conda:<pkg>` 建环境，从 `conda-meta` 找出该包的可执行文件，抓取帮助，调用可配置的 OpenAI 兼容 LLM 生成定义，校验并落盘；随后用合成输入试运行，失败标记 `needs_review`。入口：工具库右键「按需封装/校验」、MCP `wrap_tool`/`get_wrap_job`、CLI `python -m glue.wrap_service --tool ...`。生成的工具默认 `reviewed=false`；索引刷新走增量指纹。
+- 预热：`validation/prewarm_tools.py` 读取 `tool_packs/prewarm.txt`，对未封装包批量走按需封装；磁盘低于阈值自动停止，结果写入本地 `validation/prewarm-result.json`。
 - 运行期：Snakemake 子进程注入 `CONDA_DEFAULT_CHANNELS=""` 与隔离 `CONDARC`，避免 conda 26 默认渠道 ToS 阻塞环境创建；`conda_bin` 所在目录加入子进程 PATH。seqkit 已验证「画布 → Snakemake」端到端运行（2/2 步，输出正确）。
 
 ### 5.3 `glue/snakemake_bridge.py` 与运行监督
@@ -538,7 +539,7 @@ setuptools>=70        # Python 3.12+ 下为 NodeGraphQt 提供 distutils 兼容
 | 层级 | 现有内容 |
 | :--- | :--- |
 | 单元/集成（`tests/test_backend.py`，17 项） | 格式规则、会话冲突、符号链接路径、注册表、编译与环检测、目录输出编译、目录预览、文件检查、自动封装定义校验、Top-50 清单定义校验、审核覆盖、按需封装服务、日志解析、真实 Snakemake 执行、planned_jobs 与单步状态 |
-| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项）；`mcp_stdio_client` 覆盖 9 个工具 |
+| 验证脚本（`validation/`） | `readers_check`（14 种格式）、`modes_check`（预演/全量/单步/运行至此）、`cancel_check`（互斥、取消、无孤儿进程）、`mcp_stdio_client`（7 个工具）、`ui_smoke`（offscreen UI 加载与保存）、`common_tools_check`/`common_tools_ui`（本机工具真实运行）、`demo_check`、`catalog_check`（真实上游索引 15,447 条与构建耗时）、`wrap_smoke`（auto 封装工具的合成数据冒烟，可只审核通过项）、`prewarm_tools`（常用包批量按需封装）；`mcp_stdio_client` 覆盖 9 个工具 |
 | 端到端 | auto `seqkit`（合成 FASTQ）、`smk:bio/fastp`（wrapper + Conda）、auto `fastqc`（目录输出）、`bcftools query`（课题真实 VCF）、`samtools flagstat`（课题真实 BAM）均经编译与 Snakemake 真实运行通过；Top-50 首批 46/46 合成数据冒烟通过 |
 | 未覆盖 | Snakefile 编译快照测试、多版本 Snakemake 日志样本、注入用例的系统化测试、大规模索引性能 |
 

@@ -157,7 +157,18 @@ def package_binaries(env, pkg_name):
             if binary in BLOCKED or binary.startswith(("python", "pip", "x86_64-conda")):
                 continue
             names.add(binary)
-    return sorted(names)
+    target = pkg_name.lower().replace("-", "").replace("_", "")
+    return sorted(
+        names,
+        key=lambda name: (
+            0
+            if name.lower().replace("-", "").replace("_", "") == target
+            else 1
+            if target in name.lower().replace("-", "").replace("_", "")
+            else 2,
+            name,
+        ),
+    )
 
 
 @dataclass
@@ -273,7 +284,7 @@ class WrapService:
                 outcomes.append(f"{spec.tool_id}: {detail}（未审核）")
         if job.tool_ids:
             self._update(job, "indexing", "刷新工具索引")
-            self.registry.build_index(refresh=True)
+            self.registry.build_index()
             failed = any("试运行失败" in item for item in outcomes)
             self._update(
                 job,
