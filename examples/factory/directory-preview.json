@@ -1,0 +1,13 @@
+{
+  "id": "directory-preview",
+  "title": "fix: honor preview_n for directory previews",
+  "request": "inspect_bio_file currently returns five directory entries regardless of preview_n. Make directory previews honor preview_n, including zero and a value greater than five, while preserving the existing bounded scan and file behavior. Add regression coverage.",
+  "acceptance": "Directory previews return at most preview_n entries; preview_n=0 returns an empty preview; preview_n=8 can return eight entries from a directory containing ten files. sampled_entries remains the bounded scanned count. Existing tests pass. Do not change the allowed range of preview_n or weaken tests.",
+  "route": "tests_docs_lint",
+  "risk": "low",
+  "allowed_files": ["glue/bio_inspector.py", "tests/test_directory_preview.py"],
+  "checks": [
+    ["{python}", "-m", "ruff", "check", "glue/bio_inspector.py", "tests/test_directory_preview.py"],
+    ["{python}", "-m", "pytest", "-q", "tests/test_directory_preview.py", "tests/test_backend.py"]
+  ]
+}

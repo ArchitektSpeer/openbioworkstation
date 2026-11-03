@@ -145,3 +145,7 @@ WSMV 案例使用 12 个 RNA-seq 文库。在所报告的共感染与 WSMV 宿�
 ## 许可证
 
 OpenBioWorkstation 采用 [GNU GPL v3.0 许可证](LICENSE)。许可证标识为 `GPL-3.0-only`。依赖组件与实际调用的生物信息学工具遵循各自的许可证。
+
+## 多模型开发工厂
+
+[本地软件工厂](docs/software-factory.zh-CN.md)提供模型路由、独立任务 worktree、SQLite 恢复、质量检查及独立复审；使用前需核验本机 CLI、账号与配额。
