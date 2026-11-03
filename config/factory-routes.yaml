@@ -1,0 +1,25 @@
+# Custom factory policy, not a native CLI configuration.
+max_parallel_jobs: 1
+max_repair_attempts: 3
+max_calls_per_task: 10
+max_calls_per_day: 30
+call_timeout: 180
+# Cost is recorded where a CLI reports it; call/time limits also cover subscriptions.
+max_reported_usd_per_task: 5
+max_reported_usd_per_day: 15
+cooldown_seconds: 300
+routes:
+  requirements: [opus, sol]
+  orchestration: [sol, opus]
+  frontend_complex: [opus, sol]
+  backend_complex: [astra, sol]
+  routine_code: [deepseek, qwen, glm]
+  tests_docs_lint: [qwen, glm, deepseek]
+  review: [sol, opus]
+models:
+  sol: {provider: codex, model: gpt-6.1-sol}
+  astra: {provider: codex, model: gpt-6-astra}
+  opus: {provider: claude, model: claude-opus-5-5}
+  qwen: {provider: qodercn, model: Qwen3.8-Flash}
+  glm: {provider: qodercn, model: GLM-5.3-Flash}
+  deepseek: {provider: opencode, model: opencode-go/deepseek-v4.1-flash}
