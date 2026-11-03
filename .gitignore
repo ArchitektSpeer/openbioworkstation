@@ -17,3 +17,6 @@ validation/tmp-*/
 !/validation/*.py
 # Original private implementation brief is not public documentation.
 /bio_workstation_claude_prompt.md
+
+# Local factory state, model logs and worktrees.
+.factory/

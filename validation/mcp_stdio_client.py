@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def params(workspace):
     return StdioServerParameters(
-        command=str(ROOT / ".venv/bin/python"),
+        command=sys.executable,
         args=["-m", "mcp_server.bio_mcp", "--workspace", str(workspace)],
         cwd=str(ROOT),
         env={**os.environ, "PYTHONPATH": str(ROOT)},
@@ -37,7 +37,7 @@ async def registration_and_graph(workspace):
         await session.initialize()
         tools = sorted(t.name for t in (await session.list_tools()).tools)
         print("TOOLS", tools)
-        assert len(tools) == 7, tools
+        assert {"search_bio_tools", "add_node", "connect_nodes", "compile_and_run_async", "get_run_status", "inspect_output_file", "auto_wrap_bioconda_pkg", "wrap_tool", "get_wrap_job"} <= set(tools), tools
 
         found = payload(await session.call_tool("search_bio_tools", {"query": "fastp"}))
         print("SEARCH", found["total"], found["items"][0]["tool_id"])
