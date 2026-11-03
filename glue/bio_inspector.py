@@ -24,7 +24,7 @@ def inspect_bio_file(path: str, preview_n: int = 5, full_stats: bool = False) ->
             result.format = "DIRECTORY"
             result.valid = True
             result.stats = {"sampled_entries": len(names)}
-            result.preview = names[:5]
+            result.preview = names[:preview_n]
             result.elapsed_ms = round((perf_counter() - start) * 1000, 2)
             return result
         if not file.is_file():
