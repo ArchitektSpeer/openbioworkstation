@@ -10,6 +10,7 @@ import time
 from pathlib import Path
 
 from glue.models import RunStatus
+from glue.run_artifacts import fingerprint
 from glue.session_store import atomic_json
 from glue.snakemake_bridge import _now, parse_log_line
 
@@ -93,6 +94,22 @@ def main(directory):
         for uid, state in status.node_states.items():
             if state == "running":
                 status.node_states[uid] = "failed"
+    if status.state == "success" and not status.dry_run:
+        try:
+            atomic_json(
+                directory / "artifacts.json",
+                {
+                    p: fingerprint(p)
+                    for uid, ports in manifest["outputs"].items()
+                    if uid in manifest.get("selected_uids", [])
+                    for values in ports.values()
+                    for p in values
+                },
+            )
+        except OSError as exc:
+            # Execution finished; missing artifact verification must not strand run state.
+            with (directory / "snakemake.log").open("a") as log:
+                log.write(f"结果身份记录失败，历史结果不可验证：{exc}\n")
     status.finished_at = _now()
     atomic_json(directory / "status.json", status.to_dict())
     return 0

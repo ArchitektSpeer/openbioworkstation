@@ -92,13 +92,15 @@ conda create -y --solver libmamba --override-channels \
 }
 ```
 
-MCP 接口支持工具检索、节点创建、端口连接、异步执行、状态查询、文件检查及工具适配任务。Agent 修改工作区前应先保存桌面修改；收到外部修改提示后，重新加载并核对会话。
+MCP 接口支持工具检索、读取流程和工具配置、增删改节点、连接与断开端口、异步执行与取消、历史查询、文件检查及工具适配任务。Agent 修改工作区前应先保存桌面修改；收到外部修改提示后，重新加载并核对会话。
 
 可以从以下任务描述开始：
 
 > 检查输入文件，确认所需工具并构建工作流。正式执行前先进行预演。报告实际运行 ID、输出路径及错误，并区分已执行的操作与尚未执行的分析步骤。
 
-[Agent 协作教程](docs/agent-workflow.zh-CN.md)提供完整的合成 FASTQ → SeqKit 统计练习、工具调用示例及真实数据分析说明。MCP stdio 接口已有执行验证，具体 Agent 客户端的兼容性仍需分别检查。
+[双向编辑与运行快照](docs/agent-editing.zh-CN.md)说明修订冲突、未审核工具执行选项及历史结果检查。
+
+[Agent 协作教程](docs/agent-workflow.zh-CN.md)提供完整的合成 FASTQ → SeqKit 统计练习、工具调用示例及真实数据分析说明。MCP stdio 接口已有执行验证；[Qoder CN 真实推理](docs/qoder-mcp-validation.zh-CN.md)已完成合成 SeqKit 分析闭环，其他 Agent 客户端仍需分别检查。
 
 ## LLM 辅助工具适配
 
@@ -148,4 +150,4 @@ OpenBioWorkstation 采用 [GNU GPL v3.0 许可证](LICENSE)。许可证标识为
 
 ## 多模型开发工厂
 
-[本地软件工厂](docs/software-factory.zh-CN.md)提供模型路由、独立任务 worktree、SQLite 恢复、质量检查及独立复审；使用前需核验本机 CLI、账号与配额。
+[本地软件工厂](docs/software-factory.zh-CN.md)已实现实际 CLI 路由、独立 worktree、SQLite 状态、限次修复、质量检查、独立复审和草稿 PR。[真实执行记录](docs/software-factory-validation.zh-CN.md)区分已调用模型与仅核验目录的适配器。

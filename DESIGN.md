@@ -3,6 +3,8 @@
 > 生物信息学可视化节点工作站：100% 复用开源组件 + 纯 Python 胶水层 + MCP 接入
 >
 > 公开实现与验证边界说明（原始内部需求稿不随仓库发布）
+> 2026-11-03 更新：外部 Agent 执行复杂操作，UI 查看并修改同一配置；新增共享编辑校验、完整 MCP 编辑接口与运行快照/产物身份检查，详见 [双向协作](docs/agent-editing.zh-CN.md)。
+>
 > 文档版本：v0.2（2026-10-30）——按实际代码修订，以本文为准；v0.1 的设想与实现不符之处见「附录 A 修订记录」。
 
 ---
@@ -44,7 +46,7 @@
 | G3 | 「运行此步」「运行至此节点」「全量运行」，节点边框实时反映状态 | ✅ 已实现并实测 |
 | G4 | 快速文件校验与前 5 条记录预览（FASTA/FASTQ/SAM/BAM/CRAM/VCF/BCF 等） | ✅ 14 种格式验证通过 |
 | G5 | 多源适配器三阶段扩展：snakemake-wrappers（300~500）→ nf-core/modules + CWL（1,800+）→ Bioconda 长尾（12,000+） | ⚠️ 上游元数据已下载并建索引 15,447 条；Top-50 批次 50/50 已封装（46/46 合成数据冒烟通过并审核，4 个仅存活检查；11 个目录输出）；seqkit / fastp（smk + Conda）/ fastqc（目录）/ bcftools query（真实 VCF）/ samtools flagstat（真实 BAM）均已端到端验证；nf-core 86 个可生成 shell |
-| G6 | 通过 MCP 暴露 9 个高层工具 | ✅ 9 个工具经 stdio 接口验证；⚠️ 未在 Claude Code/Desktop 中实测 |
+| G6 | 通过 MCP 暴露 17 个高层工具 | ✅ 编辑、冲突、检索、构图及运行经 stdio 接口验证；⚠️ 未在 Claude Code/Desktop 中实测 |
 
 ### 1.2 非目标（v1 明确不做）
 
@@ -108,7 +110,7 @@ UI、MCP、运行监督三类进程只通过**工作区目录**共享状态（`s
 | 环境隔离 | Conda / Apptainer | 透传 `--use-conda` / `--sdm conda apptainer` 与 `--conda-prefix` |
 | CWL 执行 | `cwltool` | 生成 job JSON，经 `glue/cwl_runner.py` 调用 |
 | 节点图编辑、序列化、菜单、属性面板 | NodeGraphQt | 节点类注册、端口格式拦截、菜单命令、状态着色 |
-| MCP 协议 | `mcp` 官方 SDK（FastMCP 1.x） | 9 个工具函数 |
+| MCP 协议 | `mcp` 官方 SDK（FastMCP 1.x） | 17 个工具函数 |
 
 ---
 
@@ -353,7 +355,7 @@ python -m snakemake -s <runs/ID/Snakefile> -d <workdir> --cores N
 | `wrap_tool` | `(tool_id)` | 提交按需封装/校验任务（`conda:<pkg>` 或 `auto:<pkg>/<cmd>`），返回 `job_id` 与状态 |
 | `get_wrap_job` | `(job_id)` | 返回封装任务状态、帮助文本与生成的定义 |
 
-所有会话写入走 `session_store.save_session(..., expected_revision, updated_by="mcp")`。**未实现**：v0.1 设想的 MCP sampling 路径（服务端直接请求客户端 LLM 生成工具定义），目前只有两段式调用。
+新增 `get_workflow`、`get_tool_schema`、`update_node`、`remove_node`、`disconnect_nodes`、`cancel_run`、`list_runs`、`get_run_snapshot`；输出检查支持 `run_id`。UI/MCP 编辑通过 `WorkflowService` 共用配置校验，再以 `session_store.save_session(..., expected_revision)` 保存。**未实现**：v0.1 设想的 MCP sampling 路径（服务端直接请求客户端 LLM 生成工具定义），目前只有两段式调用。
 
 ---
 
@@ -491,7 +493,7 @@ openbioworkstation/
 | :--- | :--- | :--- |
 | 命令注入 | 子进程一律 argv；包名、命令名、端口名、参数名用正则白名单，并排除 Python 关键字 | ✅ |
 | Snakefile 代码注入 | 属性值、路径一律 `repr()`；`shell:` 中的端口引用使用 `{input.x:q}` 引号；不允许 `run:` 块 | ✅ |
-| LLM 生成的定义 | `reviewed: false`；默认 `allow_unreviewed=false` 时拒绝编译；需在 UI 中审核 | ✅ |
+| LLM 生成的定义 | `reviewed: false`；默认沿用 `allow_unreviewed` 配置；UI 或 MCP 可显式允许本次运行，审核标记保持独立 | ✅ |
 | 任意文件读取 | 输入路径限制在工作区与 `allowed_input_roots` 内，MCP 输出预览限制在工作区内，均解析符号链接后判断 | ✅ |
 | 环境膨胀 | `conda create` 超时 900 s | ⚠️ 未做磁盘配额检查 |
 | 上游篡改 | wrapper 指令带固定版本前缀（`wrappers_version`） | ⚠️ 上游仓库未固定 commit |
