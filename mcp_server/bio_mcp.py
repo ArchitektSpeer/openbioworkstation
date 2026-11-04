@@ -17,6 +17,7 @@ from glue.errors import WorkstationError
 from glue.formats import formats_compatible
 from glue.session_store import load_session
 from glue.snakemake_bridge import RunManager, compile_session
+from glue.workflow_preflight import preflight_workflow
 from glue.workflow_service import WorkflowService
 from glue.wrap_service import WrapService
 from glue.wrapper_registry import BiocondaAutoWrapAdapter, ToolRegistry
@@ -253,6 +254,28 @@ def create_server(config, registry=None):
             "planned_jobs_kind": manifest["planned_jobs_kind"],
             "warnings": manifest["warnings"],
         }
+
+    @mcp.tool()
+    async def validate_workflow(
+        expected_revision: int | None = None,
+        allow_unreviewed: bool | None = None,
+    ) -> dict:
+        """Compile-check the saved graph without executing anything.
+
+        This is full-saved-graph compile validation only: not a Snakemake dry-run,
+        not an environment or conda check, not a data-format/content check, and not
+        proof that the workflow will execute. It reads saved state only (UI drafts
+        are excluded) and never creates a run, Snakefile, log or session write.
+        `allow_unreviewed=None` follows config; diagnostics carry stable node IDs
+        when the underlying error has one.
+        """
+        return await asyncio.to_thread(
+            preflight_workflow,
+            config,
+            registry,
+            expected_revision=expected_revision,
+            allow_unreviewed=allow_unreviewed,
+        )
 
     @mcp.tool()
     async def get_run_status(run_id: str, log_tail: int = 30) -> dict:
