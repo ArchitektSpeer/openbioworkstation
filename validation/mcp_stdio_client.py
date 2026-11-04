@@ -43,6 +43,7 @@ async def registration_and_graph(workspace):
             "update_node",
             "remove_node",
             "disconnect_nodes",
+            "validate_workflow",
             "cancel_run",
             "list_runs",
             "get_run_snapshot",
@@ -54,6 +55,13 @@ async def registration_and_graph(workspace):
             "wrap_tool",
             "get_wrap_job",
         } <= set(tools), tools
+        preflight_tool = next(
+            t for t in (await session.list_tools()).tools if t.name == "validate_workflow"
+        )
+        assert set(preflight_tool.inputSchema.get("properties", {})) == {
+            "expected_revision",
+            "allow_unreviewed",
+        }, preflight_tool.inputSchema
 
         found = payload(await session.call_tool("search_bio_tools", {"query": "fastp"}))
         print("SEARCH", found["total"], found["items"][0]["tool_id"])
@@ -72,6 +80,25 @@ async def registration_and_graph(workspace):
 
         tool = payload(await session.call_tool("add_node", {"tool_id_or_kind": "smk:bio/fastp"}))
         dst = payload(await session.call_tool("add_node", {"tool_id_or_kind": "output"}))
+
+        async def preflight(revision):
+            tracked = [workspace / "session.json", workspace / "session.meta.json"]
+            before = {p: p.read_bytes() for p in tracked if p.exists()}
+            runs_before = payload(await session.call_tool("list_runs", {}))
+            checked = payload(
+                await session.call_tool("validate_workflow", {"expected_revision": revision})
+            )
+            assert all(p.read_bytes() == data for p, data in before.items())
+            assert payload(await session.call_tool("list_runs", {})) == runs_before
+            assert checked["revision"] == revision
+            return checked
+
+        broken_revision = payload(await session.call_tool("get_workflow", {}))["revision"]
+        broken = await preflight(broken_revision)
+        assert broken["valid"] is False
+        assert broken["diagnostics"][0]["node_id"] == tool["node_id"]
+        assert broken["targets"] == [] and broken["outputs"] == {}
+
         linked = payload(
             await session.call_tool(
                 "connect_nodes",
@@ -96,6 +123,14 @@ async def registration_and_graph(workspace):
         )
         current = payload(await session.call_tool("get_workflow", {}))
         assert len(current["nodes"]) == 3
+        repaired = await preflight(current["revision"])
+        assert repaired["valid"] is True and repaired["tool_node_count"] == 1
+        assert repaired["targets"] and repaired["outputs"][tool["node_id"]]
+        stale_preflight = await session.call_tool(
+            "validate_workflow", {"expected_revision": broken_revision}
+        )
+        assert stale_preflight.isError
+        print("PREFLIGHT_REPAIR_OK")
         schema = payload(await session.call_tool("get_tool_schema", {"tool_id": "smk:bio/fastp"}))
         assert "threads" in schema["properties"]
         changed = payload(
@@ -184,6 +219,7 @@ async def run_flow(workspace):
             )
         )
         dst = payload(await session.call_tool("add_node", {"tool_id_or_kind": "output"}))
+
         linked = payload(
             await session.call_tool(
                 "connect_nodes",
