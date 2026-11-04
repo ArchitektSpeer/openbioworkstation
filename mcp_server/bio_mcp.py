@@ -15,8 +15,9 @@ from glue.bio_inspector import inspect_bio_file
 from glue.config import allowed_path, load_config
 from glue.errors import WorkstationError
 from glue.formats import formats_compatible
-from glue.session_store import load_session, save_session
+from glue.session_store import load_session
 from glue.snakemake_bridge import RunManager, compile_session
+from glue.workflow_service import WorkflowService
 from glue.wrap_service import WrapService
 from glue.wrapper_registry import BiocondaAutoWrapAdapter, ToolRegistry
 
@@ -36,6 +37,7 @@ def create_server(config, registry=None):
     manager = RunManager(config.workspace, registry, config)
     wrap_service = WrapService(config, registry)
     mcp = FastMCP("openbioworkstation")
+    workflow = WorkflowService(config, registry)
 
     def compile_current(allow_unreviewed=False):
         session, _ = load_session(config.workspace)
@@ -81,16 +83,14 @@ def create_server(config, registry=None):
         binary: str | None = None,
         dependencies: list[str] | None = None,
     ) -> dict:
-        """Fetch CLI help, then submit a biows YAML definition in a second call. New tools require review."""
+        """Fetch CLI help, then submit a biows YAML definition in a second call. New definitions are marked unreviewed; execution policy is selected separately."""
         adapter = next(
             (a for a in registry.adapters if isinstance(a, BiocondaAutoWrapAdapter)), None
         )
         if adapter is None:
             raise WorkstationError("未配置 Bioconda 适配器")
         dependencies = dependencies or []
-        prepared = await asyncio.to_thread(
-            adapter.prepare, pkg_name, cli_cmd, binary, dependencies
-        )
+        prepared = await asyncio.to_thread(adapter.prepare, pkg_name, cli_cmd, binary, dependencies)
         if meta_yaml is None:
             help_text = prepared["help_text"]
             return {
@@ -118,10 +118,19 @@ def create_server(config, registry=None):
 
     @mcp.tool()
     async def add_node(
-        tool_id_or_kind: str, properties: dict | None = None, position: list[float] | None = None
+        tool_id_or_kind: str,
+        properties: dict | None = None,
+        position: list[float] | None = None,
+        expected_revision: int | None = None,
     ) -> dict:
-        """Add an input/output/tool node and return its stable bio_uid for future calls."""
+        """Add a node and return stable bio_uid and ports.
+
+        Built-in kinds: fastq_input, fasta_reference, bam_input, vcf_input, output.
+        Use get_tool_schema(kind) for path/property names, or a discovered tool_id.
+        """
         session, revision = await asyncio.to_thread(load_session, config.workspace)
+        if expected_revision is not None and expected_revision != revision:
+            raise WorkstationError("会话已修改，请重新读取后再编辑")
         uid, key = schema.new_uid(), uuid.uuid4().hex
         kind = schema.INPUT_KIND_BY_MCP.get(tool_id_or_kind)
         if kind:
@@ -137,7 +146,7 @@ def create_server(config, registry=None):
         for prop, value in (properties or {}).items():
             if prop not in custom or prop in (schema.UID_PROP, schema.TOOL_ID_PROP):
                 raise WorkstationError(f"不可设置的属性：{prop}")
-            custom[prop] = str(value)
+            custom[prop] = schema.param_to_str(value)
         inspections = []
         if kind:
             for prop in kind.path_props:
@@ -160,7 +169,7 @@ def create_server(config, registry=None):
         )
         entry = schema.node_entry(typ, name, custom, pos)
         session.setdefault("nodes", {})[key] = entry
-        await asyncio.to_thread(save_session, config.workspace, session, revision, "mcp")
+        await asyncio.to_thread(workflow.save, session, revision, "mcp")
         inputs, outputs = node_ports(entry)
         return {
             "node_id": uid,
@@ -170,9 +179,17 @@ def create_server(config, registry=None):
         }
 
     @mcp.tool()
-    async def connect_nodes(from_node: str, from_port: str, to_node: str, to_port: str) -> dict:
+    async def connect_nodes(
+        from_node: str,
+        from_port: str,
+        to_node: str,
+        to_port: str,
+        expected_revision: int | None = None,
+    ) -> dict:
         """Connect stable node IDs using the same port format checks as the UI."""
         session, revision = await asyncio.to_thread(load_session, config.workspace)
+        if expected_revision is not None and expected_revision != revision:
+            raise WorkstationError("会话已修改，请重新读取后再编辑")
         src, dst = (
             schema.node_key_by_uid(session, from_node),
             schema.node_key_by_uid(session, to_node),
@@ -202,17 +219,30 @@ def create_server(config, registry=None):
         except CycleError:
             return {"ok": False, "reason": "连线会形成环"}
         edges.append(edge)
-        await asyncio.to_thread(save_session, config.workspace, session, revision, "mcp")
+        await asyncio.to_thread(workflow.save, session, revision, "mcp")
         return {"ok": True}
 
     @mcp.tool()
     async def compile_and_run_async(
-        mode: str = "all", target_node: str | None = None, cores: int = 4, dry_run: bool = False
+        mode: str = "all",
+        target_node: str | None = None,
+        cores: int = 4,
+        dry_run: bool = False,
+        allow_unreviewed: bool | None = None,
+        expected_revision: int | None = None,
     ) -> dict:
         """Compile an immutable run snapshot and start Snakemake in the background."""
-        session, _ = await asyncio.to_thread(load_session, config.workspace)
+        session, revision = await asyncio.to_thread(load_session, config.workspace)
+        if expected_revision is not None and expected_revision != revision:
+            raise WorkstationError("会话已修改，请重新读取后再运行")
         run_id = await asyncio.to_thread(
-            manager.start, session, mode=mode, target_uid=target_node, cores=cores, dry_run=dry_run
+            manager.start,
+            session,
+            mode=mode,
+            target_uid=target_node,
+            cores=cores,
+            dry_run=dry_run,
+            allow_unreviewed=allow_unreviewed,
         )
         directory = config.workspace / "runs" / run_id
         manifest = json.loads((directory / "manifest.json").read_text())
@@ -245,11 +275,15 @@ def create_server(config, registry=None):
         return data
 
     @mcp.tool()
-    async def inspect_output_file(node_id_or_path: str, full_stats: bool = False) -> dict:
+    async def inspect_output_file(
+        node_id_or_path: str, full_stats: bool = False, run_id: str | None = None
+    ) -> dict:
         """Inspect a node's outputs or a workspace-contained path; symlinks are resolved."""
         session, _ = await asyncio.to_thread(load_session, config.workspace)
         key = schema.node_key_by_uid(session, node_id_or_path)
-        if key is not None:
+        if run_id is not None:
+            paths = await asyncio.to_thread(manager.output_paths, run_id, node_id_or_path)
+        elif key is not None:
             compiled = await asyncio.to_thread(compile_current, True)
             paths = [
                 path
@@ -276,6 +310,77 @@ def create_server(config, registry=None):
     async def get_wrap_job(job_id: str) -> dict:
         """Return one wrapping job's status, help text and generated definition."""
         return await asyncio.to_thread(wrap_service.job, job_id)
+
+    @mcp.tool()
+    async def get_workflow() -> dict:
+        """Read saved nodes, stable IDs, configuration, connections and revision. UI drafts are not saved state."""
+        return await asyncio.to_thread(workflow.read)
+
+    @mcp.tool()
+    async def get_tool_schema(tool_id: str) -> dict:
+        """Read ports and editable properties of a tool or built-in node kind from get_workflow."""
+        return await asyncio.to_thread(workflow.tool_schema, tool_id)
+
+    @mcp.tool()
+    async def update_node(
+        node_id: str,
+        properties: dict | None = None,
+        position: list[float] | None = None,
+        name: str | None = None,
+        expected_revision: int | None = None,
+    ) -> dict:
+        """Update existing configuration; pass the revision returned by get_workflow to reject stale edits."""
+        return await asyncio.to_thread(
+            workflow.edit,
+            "update",
+            node_id=node_id,
+            properties=properties,
+            position=position,
+            name=name,
+            expected_revision=expected_revision,
+        )
+
+    @mcp.tool()
+    async def remove_node(node_id: str, expected_revision: int | None = None) -> dict:
+        """Remove a node and its connections. Existing run snapshots are retained."""
+        return await asyncio.to_thread(
+            workflow.edit, "remove", node_id=node_id, expected_revision=expected_revision
+        )
+
+    @mcp.tool()
+    async def disconnect_nodes(
+        from_node: str,
+        from_port: str,
+        to_node: str,
+        to_port: str,
+        expected_revision: int | None = None,
+    ) -> dict:
+        """Remove an edge without deleting nodes."""
+        return await asyncio.to_thread(
+            workflow.edit,
+            "disconnect",
+            from_node=from_node,
+            from_port=from_port,
+            to_node=to_node,
+            to_port=to_port,
+            expected_revision=expected_revision,
+        )
+
+    @mcp.tool()
+    async def cancel_run(run_id: str) -> dict:
+        """Request cancellation; poll get_run_status until terminal state."""
+        return {"requested": await asyncio.to_thread(manager.cancel, run_id)}
+
+    @mcp.tool()
+    async def list_runs(limit: int = 20) -> dict:
+        """List saved runs so another agent session can resume monitoring."""
+        runs = await asyncio.to_thread(manager.list_runs, max(0, min(limit, 100)))
+        return {"runs": [run.to_dict() for run in runs]}
+
+    @mcp.tool()
+    async def get_run_snapshot(run_id: str) -> dict:
+        """Read executed configuration, tool definitions and manifest independently of the current graph."""
+        return await asyncio.to_thread(manager.snapshot, run_id)
 
     return mcp
 

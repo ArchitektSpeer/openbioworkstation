@@ -51,7 +51,7 @@ printf '@r1\nACGT\n+\nIIII\n@r2\nTGCA\n+\nIIII\n' \
 }
 ```
 
-如果使用自定义 `BIOWS_COMMON_ENV`，也将其传入服务进程的 `env`。客户端通常自行启动 stdio 服务，无需另外在终端启动同一服务。连接后先检查工具列表是否包含下列 9 项：
+如果使用自定义 `BIOWS_COMMON_ENV`，也将其传入服务进程的 `env`。客户端通常自行启动 stdio 服务，无需另外在终端启动同一服务。连接后先检查工具列表是否包含下列基础操作；完整双向编辑接口见[双向编辑与运行快照](agent-editing.zh-CN.md)：
 
 | 工具 | 用途 |
 |---|---|
@@ -73,7 +73,7 @@ stdio 接口测试与具体 Agent 客户端集成是不同验证层级。本教�
 .venv/bin/python -m ui.workstation_window --workspace ~/biows/projects/agent-seqkit
 ```
 
-共享的是本地会话文件。Agent 修改期间先保存界面修改；发生 revision 冲突时重新加载会话并核对，避免反复保存旧版本。当前 MCP 没有读取完整画布、修改已有节点参数或删除节点的高层接口；这类操作使用界面或经检查的脚本，不要臆造工具名。
+共享的是本地会话文件。Agent 修改期间先保存界面修改；发生 revision 冲突时重新加载会话并核对，避免反复保存旧版本。可通过 get_workflow 读取当前已保存画布，通过 get_tool_schema 查看工具配置，通过 update_node、remove_node 和 disconnect_nodes 修改已有流程。写操作建议传 expected_revision，以防覆盖较新的修改。
 
 ## 4. 可直接交给 Agent 的练习提示词
 

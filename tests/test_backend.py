@@ -378,3 +378,6 @@ def test_planned_jobs_and_step_states(tmp_path, registry):
     assert step.node_states["a0000001"] == "skipped"
     assert step.node_states["b0000001"] == "done"
     assert step.node_states["c0000001"] == "skipped"
+
+    artifacts = json.loads((tmp_path / "runs" / step.run_id / "artifacts.json").read_text())
+    assert not any("n_c_" in path for path in artifacts)

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import threading
 import uuid
+from dataclasses import asdict
 from datetime import UTC, datetime
 from graphlib import CycleError, TopologicalSorter
 from pathlib import Path
@@ -16,7 +17,9 @@ from glue.config import allowed_path, load_config
 from glue.errors import CompileError, RunBusyError, RunNotFoundError, WorkstationError
 from glue.formats import BWA_EXTENSIONS, EXTENSIONS, formats_compatible
 from glue.models import CompileResult, RunStatus
+from glue.run_artifacts import fingerprint
 from glue.session_store import atomic_json, workspace_lock
+from glue.workflow_service import validate_session
 from glue.wrapper_registry import identifier
 
 
@@ -344,12 +347,18 @@ class RunManager:
         self.config = config or load_config(workspace=self.workdir)
         self.on_update = on_update
 
-    def start(self, session, mode="all", target_uid=None, cores=None, dry_run=False):
+    def start(
+        self, session, mode="all", target_uid=None, cores=None, dry_run=False, allow_unreviewed=None
+    ):
+        session = validate_session(session, self.registry, self.config)
+        effective_unreviewed = (
+            self.config.allow_unreviewed if allow_unreviewed is None else allow_unreviewed
+        )
         result = compile_session(
             session,
             self.registry,
             self.workdir,
-            allow_unreviewed=self.config.allow_unreviewed,
+            allow_unreviewed=effective_unreviewed,
             allowed_input_roots=self.config.allowed_input_roots,
         )
         rule = result.rule_of_node.get(target_uid) if mode != "all" else None
@@ -410,6 +419,16 @@ class RunManager:
                     "node_of_rule": result.node_of_rule(),
                     "outputs": result.outputs,
                     "warnings": result.warnings,
+                    "log_paths": result.log_paths,
+                    "allow_unreviewed": effective_unreviewed,
+                    "tool_definitions": {
+                        schema.node_uid(entry): asdict(
+                            self.registry.get(entry["custom"][schema.TOOL_ID_PROP])
+                        )
+                        for entry in nodes.values()
+                        if schema.is_tool_type(entry.get("type_", ""))
+                    },
+                    "selected_uids": [schema.node_uid(nodes[key]) for key in selected],
                     "planned_jobs": len(planned_nodes),
                     "planned_jobs_kind": "graph_rules_before_cache",
                 },
@@ -499,6 +518,37 @@ class RunManager:
                 status.state, status.finished_at = "failed", _now()
                 atomic_json(directory / "status.json", status.to_dict())
         return status
+
+    def snapshot(self, run_id):
+        directory = self._directory(run_id)
+        return {
+            "run_id": run_id,
+            "session": json.loads((directory / "session.json").read_text()),
+            "manifest": json.loads((directory / "manifest.json").read_text()),
+            "status": self.status(run_id).to_dict(),
+        }
+
+    def output_paths(self, run_id, uid):
+        snapshot = self.snapshot(run_id)
+        directory = self._directory(run_id)
+        record = directory / "artifacts.json"
+        if not record.exists():
+            raise WorkstationError("本次运行尚无可验证的结果记录（运行中、预演或旧版本运行）")
+        identities = json.loads(record.read_text())
+        paths = [
+            p for values in snapshot["manifest"]["outputs"].get(uid, {}).values() for p in values
+        ]
+        if not paths:
+            raise WorkstationError("该节点不在本次运行的输出记录中")
+        for path in paths:
+            expected = identities.get(path)
+            try:
+                unchanged = expected is not None and fingerprint(path) == expected
+            except OSError:
+                unchanged = False
+            if not unchanged:
+                raise WorkstationError("该次运行的结果已变更或不存在，不能作为历史结果打开")
+        return paths
 
     def cancel(self, run_id):
         directory = self._directory(run_id)

@@ -1,4 +1,4 @@
-"""End-to-end MCP stdio check: real subprocess, seven tools, real Snakemake dry-run."""
+"""End-to-end MCP stdio check: real subprocess, workflow editing tools, real Snakemake dry-run."""
 
 import asyncio
 import json
@@ -37,7 +37,23 @@ async def registration_and_graph(workspace):
         await session.initialize()
         tools = sorted(t.name for t in (await session.list_tools()).tools)
         print("TOOLS", tools)
-        assert {"search_bio_tools", "add_node", "connect_nodes", "compile_and_run_async", "get_run_status", "inspect_output_file", "auto_wrap_bioconda_pkg", "wrap_tool", "get_wrap_job"} <= set(tools), tools
+        assert {
+            "get_workflow",
+            "get_tool_schema",
+            "update_node",
+            "remove_node",
+            "disconnect_nodes",
+            "cancel_run",
+            "list_runs",
+            "get_run_snapshot",
+            "add_node",
+            "connect_nodes",
+            "compile_and_run_async",
+            "get_run_status",
+            "inspect_output_file",
+            "wrap_tool",
+            "get_wrap_job",
+        } <= set(tools), tools
 
         found = payload(await session.call_tool("search_bio_tools", {"query": "fastp"}))
         print("SEARCH", found["total"], found["items"][0]["tool_id"])
@@ -78,6 +94,45 @@ async def registration_and_graph(workspace):
                 },
             )
         )
+        current = payload(await session.call_tool("get_workflow", {}))
+        assert len(current["nodes"]) == 3
+        schema = payload(await session.call_tool("get_tool_schema", {"tool_id": "smk:bio/fastp"}))
+        assert "threads" in schema["properties"]
+        changed = payload(
+            await session.call_tool(
+                "update_node",
+                {
+                    "node_id": tool["node_id"],
+                    "properties": {"threads": 2},
+                    "expected_revision": current["revision"],
+                },
+            )
+        )
+        assert changed["revision"] > current["revision"]
+        stale = await session.call_tool(
+            "update_node",
+            {
+                "node_id": tool["node_id"],
+                "properties": {"threads": 3},
+                "expected_revision": current["revision"],
+            },
+        )
+        assert stale.isError
+        payload(
+            await session.call_tool(
+                "disconnect_nodes",
+                {
+                    "from_node": tool["node_id"],
+                    "from_port": "trimmed",
+                    "to_node": dst["node_id"],
+                    "to_port": "files",
+                },
+            )
+        )
+        assert len(payload(await session.call_tool("get_workflow", {}))["connections"]) == 1
+        payload(await session.call_tool("remove_node", {"node_id": dst["node_id"]}))
+        assert len(payload(await session.call_tool("get_workflow", {}))["nodes"]) == 2
+        print("EDIT_RECOVERY_OK")
         print("CONNECT", linked, linked2)
         assert linked["ok"] and linked2["ok"]
 
@@ -146,6 +201,10 @@ async def run_flow(workspace):
         run = payload(
             await session.call_tool("compile_and_run_async", {"mode": "all", "dry_run": True})
         )
+        snapshot = payload(await session.call_tool("get_run_snapshot", {"run_id": run["run_id"]}))
+        assert snapshot["status"]["dry_run"] is True
+        history = payload(await session.call_tool("list_runs", {}))
+        assert run["run_id"] in {item["run_id"] for item in history["runs"]}
         print("RUN", run["run_id"], run["warnings"], "planned_jobs=", run["planned_jobs"])
 
         state = None
@@ -160,11 +219,14 @@ async def run_flow(workspace):
 
 async def main():
     root = ROOT / "validation"
-    first, second = root / "tmp-mcp-stdio-a", root / "tmp-mcp-stdio-b"
-    first.mkdir(parents=True, exist_ok=True)
-    second.mkdir(parents=True, exist_ok=True)
-    await registration_and_graph(first)
-    await run_flow(second)
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix="tmp-mcp-", dir=root) as temporary:
+        first, second = Path(temporary) / "a", Path(temporary) / "b"
+        first.mkdir()
+        second.mkdir()
+        await registration_and_graph(first)
+        await run_flow(second)
     print("MCP_STDIO_OK")
 
 

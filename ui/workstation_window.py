@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import argparse
 import functools
+import json
 import logging
 import sys
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -27,8 +29,9 @@ from glue.config import load_config
 from glue.errors import CompileError, SessionConflictError, ToolNotWrappedError, WorkstationError
 from glue.formats import formats_compatible
 from glue.models import Config, IndexEntry, InspectResult, RunMode, RunStatus, ToolSpec
-from glue.session_store import load_session, read_revision, sanitize_session, save_session
+from glue.session_store import load_session, read_revision, sanitize_session
 from glue.snakemake_bridge import RunManager, compile_session
+from glue.workflow_service import WorkflowService
 from glue.wrap_service import TERMINAL as WRAP_TERMINAL
 from glue.wrap_service import WrapService
 from glue.wrapper_registry import ToolRegistry
@@ -445,9 +448,7 @@ class ToolLibraryWidget(QtWidgets.QWidget):
         tool_id = payload.removeprefix(TOOL_MIME_PREFIX)
         menu = QtWidgets.QMenu(self)
         if tool_id.startswith(("conda:", "auto:")):
-            menu.addAction(
-                "按需封装/校验（后台）", lambda: self.wrap_requested.emit(tool_id)
-            )
+            menu.addAction("按需封装/校验（后台）", lambda: self.wrap_requested.emit(tool_id))
         if menu.actions():
             menu.exec(self._tree.viewport().mapToGlobal(position))
 
@@ -572,6 +573,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.workdir = config.workspace
         self.run_manager = RunManager(self.workdir, registry, config)
         self.wrap_service = WrapService(config, registry)
+        self.workflow_service = WorkflowService(config, registry)
         self._wrap_timer: QtCore.QTimer | None = None
         self._wrap_seen: set[str] = set()
 
@@ -703,6 +705,11 @@ class MainWindow(QtWidgets.QMainWindow):
         run_menu.addSeparator()
         self.history_action = self._action(run_menu, "运行历史…", self.show_run_history, "Ctrl+H")
         self.history_action.setIcon(icon(pixmap.SP_FileDialogDetailedView))
+        self._action(run_menu, "查看本次运行配置快照…", self.show_run_snapshot)
+        self.allow_unreviewed_action = QtGui.QAction("允许运行未审核工具", self)
+        self.allow_unreviewed_action.setCheckable(True)
+        self.allow_unreviewed_action.setChecked(self.config.allow_unreviewed)
+        run_menu.addAction(self.allow_unreviewed_action)
 
         library_menu = bar.addMenu("工具库")
         self._action(library_menu, "搜索工具", self._focus_search, "Ctrl+F")
@@ -842,14 +849,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def _ensure_tool_type(self, tool_id: str) -> str:
         """按需为 tool_id 生成并注册节点子类，返回其节点类型。"""
         node_type = schema.tool_node_type(tool_id)
+        spec = self.registry.get(tool_id)
         if node_type not in self._tool_classes:
-            spec = self.registry.get(tool_id)
             class_name = node_type.removeprefix(schema.TOOL_PREFIX)
             attrs = {"__identifier__": "bio.tool", "NODE_NAME": spec.name, "SPEC": spec}
             node_class = type(class_name, (SnakemakeWrapperNode,), attrs)
             self.graph.register_node(node_class)
             self._register_node_commands(node_type)
             self._tool_classes[node_type] = node_class
+        else:
+            self._tool_classes[node_type].SPEC = spec
         return node_type
 
     def _add_payload_node(self, payload: str, pos: tuple[float, float]) -> None:
@@ -1050,6 +1059,12 @@ class MainWindow(QtWidgets.QMainWindow):
             return None
 
     def _node_output_paths(self, node: BioNode) -> list[str]:
+        if self._run_id:
+            try:
+                return self.run_manager.output_paths(self._run_id, node.uid())
+            except WorkstationError as exc:
+                self._notify(str(exc))
+                return []
         result = self._compile_quietly()
         if result is None:
             return []
@@ -1083,6 +1098,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self._notify(f"共 {len(existing)} 个输出文件，只打开了前 {MAX_OPEN_FILES} 个")
 
     def _open_node_log(self, node: SnakemakeWrapperNode) -> None:
+        if self._run_id:
+            self._notify("节点日志可能被后续运行覆盖；请查看底部本次运行的完整日志")
+            return
         result = self._compile_quietly()
         log_path = result.log_paths.get(node.uid()) if result else None
         if not log_path or not Path(log_path).exists():
@@ -1125,6 +1143,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 target_uid=target_uid,
                 cores=self.config.cores,
                 dry_run=dry_run,
+                allow_unreviewed=self.allow_unreviewed_action.isChecked(),
             )
         except CompileError as exc:
             self._show_compile_error(exc)
@@ -1140,6 +1159,22 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         if self.run_manager.cancel(self._run_id):
             self._notify(f"已请求取消运行 {self._run_id}")
+
+    def show_run_snapshot(self) -> None:
+        if not self._run_id:
+            self._notify("请先选择运行历史或启动运行")
+            return
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(f"运行配置快照 {self._run_id}（只读；画布修改用于后续运行）")
+        dialog.resize(850, 650)
+        layout = QtWidgets.QVBoxLayout(dialog)
+        view = QtWidgets.QPlainTextEdit()
+        view.setReadOnly(True)
+        view.setPlainText(
+            json.dumps(self.run_manager.snapshot(self._run_id), ensure_ascii=False, indent=2)
+        )
+        layout.addWidget(view)
+        dialog.exec()
 
     def show_run_history(self) -> None:
         runs = sorted(
@@ -1161,6 +1196,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def _follow_run(self, run_id: str) -> None:
         """开始跟随某次运行：状态与日志由轮询逐步回放，对已结束的运行同样适用。"""
         self._run_id = run_id
+        self._inspections.clear()
+        self.preview_view.setPlainText(
+            "结果预览绑定所选运行；画布显示当前可编辑配置。运行菜单可查看执行时的只读配置快照。"
+        )
         self._run_finished = False
         self._log_offset = 0
         self._log_partial = ""
@@ -1282,6 +1321,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except WorkstationError as exc:
             self._warn("无法读取会话", str(exc))
             return
+        self.registry.build_index()
         session, warnings = sanitize_session(session, self.registry)
         for warning in warnings:
             self.log_view.appendPlainText(f"[会话] {warning}")
@@ -1292,11 +1332,13 @@ class MainWindow(QtWidgets.QMainWindow):
                     self._ensure_tool_type(tool_id)
                 except WorkstationError as exc:
                     self.log_view.appendPlainText(f"[会话] {exc}")
+        self.graph.clear_session()
         if session.get("nodes"):
             self.graph.deserialize_session(session)
         else:
             self.graph.clear_session()
             self.graph.clear_undo_stack()
+        self.graph.undo_stack().setClean()
         self._revision = revision
         self._declined_revision = None
         self._inspections.clear()
@@ -1309,8 +1351,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def save(self) -> bool:
         session = self._current_session()
         try:
-            self._revision = save_session(
-                self.workdir, session, expected_revision=self._revision, updated_by="ui"
+            self._revision = self.workflow_service.save(
+                session, expected_revision=self._revision, updated_by="ui"
             )
         except SessionConflictError:
             buttons = QtWidgets.QMessageBox.StandardButton
@@ -1324,8 +1366,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 return False
             if answer != buttons.Yes:
                 return False
-            self._revision = save_session(
-                self.workdir, session, expected_revision=None, updated_by="ui"
+            self._revision = self.workflow_service.save(
+                session, expected_revision=None, updated_by="ui"
             )
         except WorkstationError as exc:
             self._warn("保存失败", str(exc))
@@ -1359,6 +1401,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.workdir = Path(chosen)
         self.workdir.mkdir(parents=True, exist_ok=True)
+        self.config = replace(self.config, workspace=self.workdir)
+        self.workflow_service = WorkflowService(self.config, self.registry)
         self.run_manager = RunManager(self.workdir, self.registry, self.config)
         self._run_id = None
         self._run_finished = True
